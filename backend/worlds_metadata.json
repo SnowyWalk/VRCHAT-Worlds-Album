@@ -1,0 +1,25 @@
+{
+  "wrld_ec5552f2-92e7-4849-8bd8-0b3c6aad4fef": {
+    "payload": {
+      "id": "wrld_ec5552f2-92e7-4849-8bd8-0b3c6aad4fef",
+      "name": "Palm Point",
+      "authorId": "usr_321ab97e-6e62-404f-9811-548d684fd7e1",
+      "authorName": "~Sam",
+      "imageUrl": "https://api.vrchat.cloud/api/1/file/file_c2f0808f-02e0-459a-b1fa-f3dd844bbb97/3/file",
+      "capacity": 80,
+      "visits": 1070152,
+      "favorites": 32038,
+      "heat": 6,
+      "popularity": 8,
+      "tags": [
+        "author_tag_beach",
+        "author_tag_cozy",
+        "author_tag_chill",
+        "author_tag_sun",
+        "author_tag_drink",
+        "system_approved"
+      ]
+    },
+    "fetched_at": "2025-09-20T08:31:08.497415+00:00"
+  }
+}
