@@ -22,3 +22,5 @@ WORLDS_METADATA_TTL = timedelta(hours=24)
 WORLDS_SNAPSHOT_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "worlds_snapshot.json"))
 
 INDEX_HTML_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "templates", "index.html"))
+# 월드 카테고리/설명 저장 파일
+WORLDS_DESCRIPTION_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "worlds_description.json"))

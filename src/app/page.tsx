@@ -1,77 +1,106 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import WorldCard from "@/components/WorldCard";
+import {useEffect, useState} from "react";
+import WorldCard, {WorldCardSkeleton} from "@/components/WorldCard";
+import Dict = NodeJS.Dict;
 
-// 백엔드가 같은 오리진에서 서빙된다고 가정하고 상대 경로 사용
-const PAGE_API = "/api/page/0?page_size=12";
+const PAGE_API = "/api/page/";
 
 export type WorldPayload = {
-  id: string;
-  name: string;
-  authorId: string;
-  authorName: string;
-  imageUrl: string;
-  capacity: number;
-  visits: number;
-  favorites: number;
-  heat: number;
-  popularity: number;
-  tags: string[];
+    id: string;
+    name: string;
+    authorId: string;
+    authorName: string;
+    imageUrl: string;
+    capacity: number;
+    visits: number;
+    favorites: number;
+    heat: number;
+    popularity: number;
+    tags: string[];
+    images: Dict<string>[];
 } | null;
 
 export default function Page() {
-  const [worlds, setWorlds] = useState<WorldPayload[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+    const skeletons = Array.from({length: 5});
+    const [worlds, setWorlds] = useState<WorldPayload[]>([]);
+    const [worldCardsLoading, setWorldCardsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let aborted = false;
-    async function load() {
-      try {
-        setLoading(true);
-        setError(null);
-        const res = await fetch(PAGE_API, { cache: "no-store" });
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
+    useEffect(() => {
+        let aborted = false;
+
+        async function load() {
+
+            try {
+                setWorldCardsLoading(true);
+                setError(null);
+                const res = await fetch(PAGE_API + "0", {cache: "no-store"});
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}`);
+                }
+                const data: WorldPayload[] = await res.json();
+                if (!aborted) setWorlds(Array.isArray(data) ? data : []);
+            } catch (e) {
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                if (!aborted) { // @ts-expect-error
+                    setError(e?.message ?? "요청 실패");
+                }
+            } finally {
+                if (!aborted) setWorldCardsLoading(false);
+            }
         }
-        const data: WorldPayload[] = await res.json();
-        if (!aborted) setWorlds(Array.isArray(data) ? data : []);
-      } catch (e: any) {
-        if (!aborted) setError(e?.message ?? "요청 실패");
-      } finally {
-        if (!aborted) setLoading(false);
-      }
-    }
-    load();
-    return () => {
-      aborted = true;
-    };
-  }, []);
 
-  const validWorlds = worlds.filter(Boolean) as Exclude<WorldPayload, null>[];
+        load();
+        return () => {
+            aborted = true;
+        };
+    }, []);
 
-  return (
-    <main className="mx-auto max-w-5xl p-6 space-y-6">
-      {loading && <p>불러오는 중...</p>}
-      {error && (
-        <p className="text-red-600">불러오기 오류: {error}</p>
-      )}
+    const validWorlds = worlds.filter(Boolean) as Exclude<WorldPayload, null>[];
 
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {validWorlds.map((w) => (
-          <WorldCard
-            key={w.id}
-            id={w.id}
-            name={w.name}
-            authorName={w.authorName}
-            imageUrl={w.imageUrl}
-            capacity={w.capacity}
-            visits={w.visits}
-            favorites={w.favorites}
-          />
-        ))}
-      </section>
-    </main>
-  );
+    return (
+        <main className="mx-auto max-w-[1920px] p-6 space-y-6">
+            {
+                worldCardsLoading &&
+                (
+                    <section
+                        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4">
+                        {skeletons.map((_, i) => <WorldCardSkeleton key={i}/>)}
+                    </section>
+                )
+            }
+
+            {
+                error &&
+                (
+                    <p className="text-red-600">불러오기 오류: {error}</p>
+                )
+            }
+
+            {
+                !worldCardsLoading &&
+                <section
+                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4">
+                    {validWorlds.map((w) => (
+                        <WorldCard
+                            key={w.id}
+                            id={w.id}
+                            name={w.name}
+                            authorId={w.authorId}
+                            authorName={w.authorName}
+                            imageUrl={w.imageUrl}
+                            capacity={w.capacity}
+                            visits={w.visits}
+                            favorites={w.favorites}
+                            heat={w.heat}
+                            popularity={w.popularity}
+                            tags={w.tags}
+                            images={w.images}
+                        />
+                    ))}
+                </section>
+            }
+        </main>
+    );
 }

@@ -7,6 +7,7 @@ from services.image_cache import load_image_cache_from_file
 from services.worlds_metadata import load_worlds_cache_from_file
 from core.config import STATIC_ROOT
 from services.worlds_scanner import start_periodic_scan, start_scan_async
+from services.worlds_description import load_worlds_description_from_file
 
 app = FastAPI()
 
@@ -18,5 +19,6 @@ app.mount("/static", StaticFiles(directory=STATIC_ROOT), name="static")
 async def on_startup():
     load_worlds_cache_from_file()
     load_image_cache_from_file()
+    load_worlds_description_from_file()
     start_scan_async()
     start_periodic_scan(interval_seconds=60)
