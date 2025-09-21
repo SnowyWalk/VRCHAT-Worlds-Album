@@ -2,9 +2,8 @@ from fastapi import APIRouter, HTTPException
 from httpx import HTTPError
 from requests import RequestException
 
-from services.image_cache import get_image_metadata_payload, get_world_ids_page
-from services.worlds_metadata import load_world_metadata, get_worlds_payloads
-from services.worlds_scanner import start_scan_async
+from services.image_cache import get_image_metadata_payload
+from services.worlds_metadata import load_world_metadata, get_worlds_payloads, get_worlds_with_images_page
 
 router = APIRouter(prefix="/api")
 
@@ -26,6 +25,4 @@ async def list_world_images():
 
 @router.get("/page/{page_index}")
 async def page(page_index: int, page_size: int = 20):
-    start_scan_async()
-    worlds = get_world_ids_page(page_index, page_size)
-    return get_worlds_payloads(worlds)
+    return get_worlds_with_images_page(page_index, page_size)

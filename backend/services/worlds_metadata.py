@@ -8,6 +8,7 @@ from utils.fileio import load_json, save_json
 
 _cache_lock = threading.Lock()
 _memory_cache: Dict[str, Dict[str, Any]] = {}  # { world_id: {"payload": Any, "fetched_at": ISO8601} }
+_worlds_sorted: List[str] = []  # 생성시간(ctime) 내림차순 정렬된 world_id 목록
 
 http_client = httpx.AsyncClient(
     timeout=httpx.Timeout(10.0),
@@ -120,3 +121,48 @@ def get_worlds_payloads(world_ids: List[str]) -> List[Dict[str, Any]]:
             else:
                 results.append(None)
     return results
+
+
+def update_sorted_worlds(current_world_ids: set[str], world_ctime: Dict[str, float]) -> None:
+    """
+    이미지 캐시 단계에서 수집한 월드 생성시간 기반으로 정렬 인덱스를 갱신.
+    """
+    global _worlds_sorted
+    sorted_worlds = sorted(current_world_ids, key=lambda wid: world_ctime.get(wid, 0.0), reverse=True)
+    with _cache_lock:
+        if sorted_worlds != _worlds_sorted:
+            _worlds_sorted = sorted_worlds
+
+
+def get_world_ids_page(page_index: int, page_size: int = 20) -> List[str]:
+    """
+    정렬된 월드 id 목록에서 페이지 단위로 잘라 반환.
+    """
+    if page_index < 0:
+        page_index = 0
+    with _cache_lock:
+        start = page_index * page_size
+        end = start + page_size
+        return list(_worlds_sorted[start:end])
+
+
+def get_worlds_with_images_page(page_index: int, page_size: int = 20) -> List[Dict[str, Any]]:
+    """
+    페이지 단위로 월드 메타데이터와 이미지 캐시 정보를 합쳐서 반환.
+    반환 예: [{...월드메타필드..., "images": [...]}, ...]
+    """
+    ids = get_world_ids_page(page_index, page_size)
+    worlds = get_worlds_payloads(ids)
+    try:
+        from services.image_cache import get_images_by_world_ids
+        images_map = get_images_by_world_ids(ids)
+    except Exception:
+        images_map = {}
+
+    result: List[Dict[str, Any]] = []
+    for wid, meta in zip(ids, worlds):
+        payload = dict(meta) if isinstance(meta, dict) else {}
+        payload["id"] = payload.get("id", wid) or wid
+        payload["images"] = images_map.get(wid, [])
+        result.append(payload)
+    return result

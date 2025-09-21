@@ -7,7 +7,6 @@ import time  # 주기 스케줄러용
 
 _image_cache_lock = threading.Lock()
 _image_cache: Dict[str, List[Dict[str, Any]]] = {}  # { world_id: [ {path, width, height, thumb, webp}, ... ] }
-_worlds_sorted: List[str] = []  # 생성시간(ctime) 내림차순 정렬된 world_id 목록
 
 # 갱신 중복 방지/상태 관리를 위한 플래그와 락
 _refresh_state_lock = threading.Lock()
@@ -242,17 +241,17 @@ def apply_scan_changes(
                 _image_cache[wid] = cached_list
                 changed = True
 
-        # 5) world 정렬 인덱스 갱신
-        sorted_worlds = sorted(current_world_ids, key=lambda wid: world_ctime.get(wid, 0.0), reverse=True)
-        if sorted_worlds != _worlds_sorted:
-            _worlds_sorted.clear()
-            _worlds_sorted.extend(sorted_worlds)
-            changed = True
+    # 5) world 정렬 인덱스 갱신은 worlds_metadata에 위임
+    try:
+        from services.worlds_metadata import update_sorted_worlds
+        update_sorted_worlds(set(current_world_ids), world_ctime)
+    except Exception:
+        pass
 
-        # 6) 캐시 파일 저장
-        if changed:
-            payload = [{"world_id": wid, "images": imgs} for wid, imgs in sorted(_image_cache.items())]
-            save_json(IMAGE_CACHE_FILE, payload)
+    # 6) 캐시 파일 저장
+    if changed:
+        payload = [{"world_id": wid, "images": imgs} for wid, imgs in sorted(_image_cache.items())]
+        save_json(IMAGE_CACHE_FILE, payload)
 
 def run_worlds_scan_tick() -> Dict[str, int]:
     """
@@ -283,17 +282,15 @@ def load_image_cache_from_file() -> None:
     with _image_cache_lock:
         _image_cache.clear()
         _image_cache.update(mapping)
-        # _worlds_sorted는 디스크를 기준으로 다시 셋업되어야 하므로
-        # 다음 refresh에서 갱신됩니다.
+        # 정렬 인덱스는 worlds_metadata에서 갱신됩니다.
 
 def get_image_metadata_payload():
     with _image_cache_lock:
         return [{"world_id": wid, "images": imgs} for wid, imgs in sorted(_image_cache.items())]
 
-def get_world_ids_page(page_index: int, page_size: int = 20) -> List[str]:
-    if page_index < 0:
-        page_index = 0
+def get_images_by_world_ids(world_ids: List[str]) -> Dict[str, List[Dict[str, Any]]]:
+    """
+    여러 world_id에 대한 이미지 리스트를 매핑으로 반환.
+    """
     with _image_cache_lock:
-        start = page_index * page_size
-        end = start + page_size
-        return list(_worlds_sorted[start:end])
+        return {wid: list(_image_cache.get(wid, [])) for wid in world_ids}
