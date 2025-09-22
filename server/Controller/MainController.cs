@@ -16,4 +16,10 @@ public class MainController : ControllerBase
             return Problem("아무튼 실패함");
         return Ok(JsonSerializer.Serialize(worldMetadata));
     }
+
+    [HttpGet("page/{page:int}")]
+    public ActionResult<List<WorldMetadata>> GetPage([FromRoute] int page = 0, [FromQuery] int pageCount = 10)
+    {
+        return Ok(Database.Instance.GetWorldDataListByPaging(page, pageCount));
+    }
 }

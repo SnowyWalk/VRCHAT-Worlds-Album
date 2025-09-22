@@ -6,7 +6,28 @@ namespace server.Service;
 
 public class Database
 {
-    private Dictionary<string, WorldMetadata> m_data = new();
+    private static Database m_instance;
+    public static Database Instance 
+    {
+        get 
+        { 
+            if (m_instance == null)
+                m_instance = new();
+            return m_instance;
+        }
+    }
+
+    private Dictionary<string, WorldData> m_data = new();
+
+    public List<WorldData> GetWorldDataListByPaging(int page = 0, int pageCount = 10)
+    {
+        List<WorldData> result;
+        lock (m_data)
+        {
+            result = m_data.Values.OrderByDescending(key => key.DataCreatedAt).Skip(page * pageCount).Take(pageCount).ToList();
+        }
+        return result;
+    }
 
     public void LoadFromFile()
     {
@@ -25,7 +46,7 @@ public class Database
         using FileStream openStream = File.OpenRead(Config.DatabaseJsonPath);
 
         // 스트림에서 직접 역직렬화를 수행합니다.
-        var tempData = JsonSerializer.Deserialize<Dictionary<string, WorldMetadata>>(openStream);
+        var tempData = JsonSerializer.Deserialize<Dictionary<string, WorldData>>(openStream);
 
         lock (m_data)
         {

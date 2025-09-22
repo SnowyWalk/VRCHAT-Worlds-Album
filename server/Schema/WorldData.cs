@@ -6,6 +6,6 @@ public class WorldData
     public List<WorldImage> ImageList { get; set; }
     public WorldCategory Category { get; set; }
     public WorldDescription Description { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
+    public DateTime DataCreatedAt { get; set; }
+    public DateTime FolderUpdatedAt { get; set; }
 }
