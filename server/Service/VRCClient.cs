@@ -1,13 +1,14 @@
+using server.Core;
 using server.Schema;
 using System.Net.Http.Headers;
 using System.Text.Json;
 namespace server.Service;
 
-public static class VRCAPI
+public static class VRCClient
 {
     private static readonly HttpClient m_httpClient;
 
-    static VRCAPI()
+    static VRCClient()
     {
         m_httpClient = new HttpClient();
         m_httpClient.BaseAddress = new Uri("https://api.vrchat.cloud/api/1/");
@@ -29,7 +30,7 @@ public static class VRCAPI
         }
         catch (HttpRequestException e)
         {
-            Console.WriteLine(e);
+            Log.Error(e);
             return null;
         }
     }
