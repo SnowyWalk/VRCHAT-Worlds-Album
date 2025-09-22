@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
         source: "/api/:path*",
         destination: "http://localhost:8080/api/:path*", // FastAPI로 프록시
       },
+         {
+        source: "/static/:path*",
+        destination: "http://localhost:8080/static/:path*", // FastAPI로 프록시
+      },
     ]
   },
 };

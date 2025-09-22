@@ -22,7 +22,7 @@ export type WorldPayload = {
 } | null;
 
 export default function Page() {
-    const skeletons = Array.from({length: 5});
+    const skeletons = Array.from({length: 10});
     const [worlds, setWorlds] = useState<WorldPayload[]>([]);
     const [worldCardsLoading, setWorldCardsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -35,11 +35,12 @@ export default function Page() {
             try {
                 setWorldCardsLoading(true);
                 setError(null);
-                const res = await fetch(PAGE_API + "0", {cache: "no-store"});
+                const res = await fetch(PAGE_API + "0?page_size=28", {cache: "no-store"});
                 if (!res.ok) {
                     throw new Error(`HTTP ${res.status}`);
                 }
                 const data: WorldPayload[] = await res.json();
+                console.log(data)
                 if (!aborted) setWorlds(Array.isArray(data) ? data : []);
             } catch (e) {
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -60,12 +61,12 @@ export default function Page() {
     const validWorlds = worlds.filter(Boolean) as Exclude<WorldPayload, null>[];
 
     return (
-        <main className="mx-auto max-w-[1920px] p-6 space-y-6">
+        <main className="mx-auto max-w-[1800px] p-4 space-y-6">
             {
                 worldCardsLoading &&
                 (
                     <section
-                        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4">
+                        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-7">
                         {skeletons.map((_, i) => <WorldCardSkeleton key={i}/>)}
                     </section>
                 )
@@ -81,7 +82,7 @@ export default function Page() {
             {
                 !worldCardsLoading &&
                 <section
-                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4">
+                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-7">
                     {validWorlds.map((w) => (
                         <WorldCard
                             key={w.id}
