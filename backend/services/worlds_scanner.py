@@ -119,19 +119,36 @@ def run_scan_tick() -> None:
     """
     1회의 스캔-디스패치 틱을 수행.
     - 디스크 스캔
-    - diff 계산(월드/이미지 추가, 삭제)
-    - 각 서비스에 전달하여 각자 역할 수행
+    - 정렬 인덱스 선 갱신 (즉시 page 응답 가능)
+    - 메타데이터 fetch 비동기 스케줄
+    - 이미지 생성/보정 처리
     """
     current, world_ctime = scan_worlds()
     added_worlds, removed_worlds, added_images, removed_images = _compute_diff(current)
+    print('added_worlds: ', len(added_worlds), 'removed_worlds: ', len(removed_worlds), 'added_images: ', len(added_images), 'removed_images: ', len(removed_images))
 
-    # 서비스 호출은 함수 내부 import로 순환 의존 방지
+    # 1) (중요) 정렬 인덱스를 즉시 갱신 -> page 요청 즉시 world_id 노출
+    try:
+        from services.worlds_metadata import update_sorted_worlds
+        update_sorted_worlds(set(current.keys()), world_ctime)
+    except Exception:
+        pass
+
+    # 2) 메타데이터 fetch는 비동기 스케줄만 하고 즉시 반환되도록
     try:
         from services.worlds_metadata import process_worlds_changes
         process_worlds_changes(added_worlds, removed_worlds)
     except Exception:
         pass
 
+    # 아직 fetch되지 않은 world 메타데이터 보충(반드시 성공할 때까지 백그라운드 재시도)
+    try:
+        from services.worlds_metadata import backfill_unfetched
+        backfill_unfetched(set(current.keys()))
+    except Exception:
+        pass
+
+    # 3) 이미지 생성/보정은 마지막에 (per-world 락과 heavy I/O 비잠금 방식 유지)
     try:
         from services.image_cache import apply_scan_changes
         current_world_ids = set(current.keys())
