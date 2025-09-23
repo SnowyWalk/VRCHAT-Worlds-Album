@@ -18,7 +18,11 @@ public class WorldMetadata
     
     // 부가 정보
     public DateTime UpdatedAt { get; private set; }
-    public bool IsExpired => (DateTime.UtcNow - UpdatedAt).TotalHours >= Config.WorldMetadataTTLHours;
+    
+    public bool IsExpired(TimeSpan ttl)
+    {
+        return UpdatedAt + ttl <= DateTime.UtcNow;
+    }
 
     public WorldMetadata(VRCWorldMetadata vrcWorldMetadata)
     {

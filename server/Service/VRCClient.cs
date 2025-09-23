@@ -4,11 +4,11 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 namespace server.Service;
 
-public static class VRCClient
+public class VRCClient
 {
-    private static readonly HttpClient m_httpClient;
+    private readonly HttpClient m_httpClient;
 
-    static VRCClient()
+    public VRCClient()
     {
         m_httpClient = new HttpClient();
         m_httpClient.BaseAddress = new Uri("https://api.vrchat.cloud/api/1/");
@@ -16,7 +16,7 @@ public static class VRCClient
         m_httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("VRCHAT-Worlds-Album", "1.0"));
     }
     
-    public static async Task<WorldMetadata?> FetchVRCWorldMetadata(string worldId)
+    public async Task<WorldMetadata?> FetchVRCWorldMetadata(string worldId)
     {
         try
         {
