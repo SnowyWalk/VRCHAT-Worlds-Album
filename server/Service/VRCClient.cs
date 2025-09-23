@@ -26,7 +26,7 @@ public static class VRCClient
             string body = await req.Content.ReadAsStringAsync();
             VRCWorldMetadata vrcWorldMetadata = JsonSerializer.Deserialize<VRCWorldMetadata>(body)!;
             
-            return new WorldMetadata(vrcWorldMetadata);
+            return new WorldMetadata(vrcWorldMetadata, DateTime.UtcNow);
         }
         catch (HttpRequestException e)
         {

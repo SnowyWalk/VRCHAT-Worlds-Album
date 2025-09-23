@@ -1,3 +1,4 @@
+using server.Core;
 namespace server.Schema;
 
 public class WorldMetadata
@@ -17,6 +18,7 @@ public class WorldMetadata
     
     // 부가 정보
     public DateTime UpdatedAt { get; private set; }
+    public bool IsExpired => (DateTime.UtcNow - UpdatedAt).TotalHours >= Config.WorldMetadataTTLHours;
 
     public WorldMetadata(VRCWorldMetadata vrcWorldMetadata)
     {
@@ -31,5 +33,10 @@ public class WorldMetadata
         heat = vrcWorldMetadata.Heat;
         popularity = vrcWorldMetadata.Popularity;
         tags = vrcWorldMetadata.Tags;
+    }
+
+    public WorldMetadata(VRCWorldMetadata vrcWorldMetadata, DateTime updateTime) : this(vrcWorldMetadata)
+    {
+        UpdatedAt = updateTime;
     }
 }

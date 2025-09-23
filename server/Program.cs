@@ -1,6 +1,7 @@
 using Microsoft.Extensions.FileProviders;
 using server.Core;
 using System.IO;
+using System.Threading.Channels;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +12,10 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Logging.AddConsole();
+
+var channel = Channel.CreateUnbounded<ImageJob>(new UnboundedChannelOptions { SingleReader = true, SingleWriter = true });
+builder.Services.AddSingleton(channel);
+builder.Services.AddHostedService<ImageConvertWorker>();
 
 var app = builder.Build();
 
@@ -37,3 +42,5 @@ app.MapControllers();
 new Startup().OnStartup();
 
 app.Run();
+
+public record ImageJob(string worldid, string SourcePath, string DestPath, int Quality);

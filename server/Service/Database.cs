@@ -7,10 +7,10 @@ namespace server.Service;
 public class Database
 {
     private static Database m_instance;
-    public static Database Instance 
+    public static Database Instance
     {
-        get 
-        { 
+        get
+        {
             if (m_instance == null)
                 m_instance = new();
             return m_instance;
@@ -32,9 +32,7 @@ public class Database
     public void LoadFromFile()
     {
         lock (m_data)
-        {
             m_data.Clear();
-        }
 
         if (File.Exists(Config.DatabaseJsonPath) == false)
         {
@@ -42,22 +40,56 @@ public class Database
             return;
         }
 
-        // 파일을 스트림으로 열어 메모리 사용량을 최소화합니다.
         using FileStream openStream = File.OpenRead(Config.DatabaseJsonPath);
-
-        // 스트림에서 직접 역직렬화를 수행합니다.
         var tempData = JsonSerializer.Deserialize<Dictionary<string, WorldData>>(openStream);
 
         lock (m_data)
         {
             if (tempData != null)
-            {
                 m_data = tempData;
-            }
             else
-            {
                 m_data.Clear();
-            }
         }
+    }
+
+    public void SaveToFile()
+    {
+        using FileStream openStream = File.OpenWrite(Config.DatabaseJsonTempPath);
+        lock (m_data)
+            JsonSerializer.Serialize(openStream, m_data);
+        File.Move(Config.DatabaseJsonTempPath, Config.DatabaseJsonPath, overwrite: true);
+    }
+
+    public bool HasKey(string worldId)
+    {
+        lock (m_data)
+            return m_data.ContainsKey(worldId);
+    }
+
+    public WorldData? GetWorldData(string worldId)
+    {
+        lock (m_data)
+            return m_data.GetValueOrDefault(worldId);
+    }
+
+    public WorldData AddWorldData(string worldId, DateTime createdAt)
+    {
+        WorldData newWorld = new WorldData() {
+            DataCreatedAt = createdAt,
+        };
+
+        lock (m_data)
+            m_data[worldId] = newWorld;
+
+        SaveToFile();
+        return newWorld;
+    }
+
+    public void UpdateWorldMetaData(string worldId, WorldMetadata worldMetadata)
+    {
+        lock (m_data)
+            m_data[worldId].Metadata = worldMetadata;
+
+        SaveToFile();
     }
 }
