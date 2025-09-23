@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+server/obj/
+server/bin/
+backend/static/
+*.pyc
+server/.idea/
+*.DotSettings.user
