@@ -20,11 +20,17 @@ public sealed class ImageConvertWorker : BackgroundService
 
         while (await reader.WaitToReadAsync(stoppingToken))
         {
-            while (reader.TryRead(out var job))
+            while (reader.TryRead(out ImageJob? job))
             {
                 try
                 {
-                    await ConvertToWebpAsync(job, stoppingToken);
+                    if (File.Exists(job.DestPath))
+                    {
+                        _logger.LogInformation("Image Exists: {src} -> {dst} (q{q})", job.SourcePath, job.DestPath, job.Quality);
+                        continue;
+                    }
+
+                    ConvertToWebpAsync(job, stoppingToken);
                     _logger.LogInformation("Converted: {src} -> {dst} (q{q})", job.SourcePath, job.DestPath, job.Quality);
                 }
                 catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -39,27 +45,23 @@ public sealed class ImageConvertWorker : BackgroundService
         }
     }
 
-    private static Task ConvertToWebpAsync(ImageJob job, CancellationToken ct)
+    private static void ConvertToWebpAsync(ImageJob job, CancellationToken ct)
     {
-        // 파일 I/O는 async, 인코딩은 CPU 바운드 → Task.Run으로 분리
-        return Task.Run(() =>
-        {
-            ct.ThrowIfCancellationRequested();
+        ct.ThrowIfCancellationRequested();
 
-            using var input = File.OpenRead(job.SourcePath);
-            using var skData = SKData.Create(input);
-            using var codec = SKCodec.Create(skData) ?? throw new InvalidOperationException("Invalid image");
+        using var input = File.OpenRead(job.SourcePath);
+        using var skData = SKData.Create(input);
+        using var codec = SKCodec.Create(skData) ?? throw new InvalidOperationException("Invalid image");
 
-            using var bitmap = SKBitmap.Decode(codec) ?? throw new InvalidOperationException("Decode failed");
-            using var image = SKImage.FromBitmap(bitmap);
+        using var bitmap = SKBitmap.Decode(codec) ?? throw new InvalidOperationException("Decode failed");
+        using var image = SKImage.FromBitmap(bitmap);
 
-            var webpQuality = Math.Clamp(job.Quality, 1, 100);
-            var data = image.Encode(SKEncodedImageFormat.Webp, webpQuality);
-            if (data == null) throw new InvalidOperationException("WebP encode failed");
+        var webpQuality = Math.Clamp(job.Quality, 1, 100);
+        var data = image.Encode(SKEncodedImageFormat.Webp, webpQuality);
+        if (data == null) throw new InvalidOperationException("WebP encode failed");
 
-            Directory.CreateDirectory(Path.GetDirectoryName(job.DestPath)!);
-            using var output = File.Open(job.DestPath, FileMode.Create, FileAccess.Write, FileShare.None);
-            data.SaveTo(output);
-        }, ct);
+        Directory.CreateDirectory(Path.GetDirectoryName(job.DestPath)!);
+        using var output = File.Open(job.DestPath, FileMode.Create, FileAccess.Write, FileShare.None);
+        data.SaveTo(output);
     }
 }

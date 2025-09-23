@@ -1,10 +1,16 @@
 using server.Core;
 using server.Schema;
+using System.Threading.Channels;
 namespace server.Service;
 
 public class WorldPreprocessor
 {
-    private Queue<(string worldId, string path)> m_imageProcessingQueue = new();
+private Channel<ImageJob>    
+private Queue<(string worldId, string path)> m_imageProcessingQueue = new();
+
+    public WorldPreprocessor() 
+    {
+    }
 
     public async Task Scan()
     {
@@ -27,7 +33,7 @@ public class WorldPreprocessor
             }
 
             // Process Image
-
+            
 
 
 
