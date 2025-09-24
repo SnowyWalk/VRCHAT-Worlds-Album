@@ -33,8 +33,9 @@ public class WorldPreprocessor
     {
         if (IsScanWorking)
             return;
-        
-        Database database = m_scopeFactory.CreateScope().ServiceProvider.GetRequiredService<Database>();
+
+        using IServiceScope scope = m_scopeFactory.CreateScope();
+        Database database = scope.ServiceProvider.GetRequiredService<Database>();
 
         IsScanWorking = true;
         Log.Info($"[Scan] Start Scanning.");

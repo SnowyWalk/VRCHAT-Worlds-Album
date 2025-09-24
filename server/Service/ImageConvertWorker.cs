@@ -9,18 +9,18 @@ using System.Diagnostics;
 public class ImageConvertWorker : BackgroundService
 {
     private readonly Channel<Channels.ImageJob> m_channel;
-    private readonly Database m_database;
     private readonly ImageOptions m_imageOptions;
     private readonly IPathUtil m_pathUtil;
+    private readonly IServiceScopeFactory m_scopeFactory;
 
     public ImageConvertWorker(
         Channel<Channels.ImageJob> channel, 
-        Database database,
+        IServiceScopeFactory scopeFactory,
         IOptions<ImageOptions> imageOptions,
         IPathUtil pathUtil)
     {
         m_channel = channel;
-        m_database = database;
+        m_scopeFactory = scopeFactory;
         m_imageOptions = imageOptions.Value;
         m_pathUtil = pathUtil;
     }
@@ -91,6 +91,8 @@ public class ImageConvertWorker : BackgroundService
         }
 
         // Update WorldData
-        await m_database.AddWorldImage(job.worldId, job.SourcePath, width, height);
+        using var scope = m_scopeFactory.CreateScope();
+        Database database = scope.ServiceProvider.GetRequiredService<Database>();
+        await database.AddWorldImage(job.worldId, job.SourcePath, width, height);
     }
 }

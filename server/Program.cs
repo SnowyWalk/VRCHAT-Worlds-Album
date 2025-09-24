@@ -11,6 +11,8 @@ var env = builder.Environment;
 string path = Path.Combine(builder.Environment.ContentRootPath, "app.db");
 string conn = $"Data Source={path};Cache=Shared;Foreign Keys=True;Journal Mode=WAL;Synchronous=Normal;busy_timeout=3000;Temp Store=Memory;";
 builder.Services.AddDbContext<DB>(options => options.UseSqlite(conn));
+// builder.Services.AddDbContextFactory<DB>(options => options.UseSqlite(conn));
+builder.Services.AddScoped<Database>();
 
 builder.Services.AddOptions<AppPathsOptions>()
     .Bind(builder.Configuration.GetSection("AppPaths"))
@@ -50,7 +52,6 @@ var channel = Channel.CreateUnbounded<Channels.ImageJob>(new UnboundedChannelOpt
 builder.Services.AddSingleton(channel);
 builder.Services.AddHostedService<ImageConvertWorker>();
 
-builder.Services.AddScoped<Database>();
 builder.Services.AddSingleton<VRCClient>();
 builder.Services.AddSingleton<WorldPreprocessor>();
 

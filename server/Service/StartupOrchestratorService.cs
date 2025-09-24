@@ -5,15 +5,12 @@ namespace server.Service;
 public class StartupOrchestratorService : BackgroundService
 {
     private readonly WorldPreprocessor m_worldPreprocessor;
-    private readonly Database m_database;
     private readonly CacheOptions m_cacheOptions;
 
     public StartupOrchestratorService(
-        Database database, 
         WorldPreprocessor worldPreprocessor,
         IOptions<CacheOptions> cacheOptions)
     {
-        m_database = database;
         m_worldPreprocessor = worldPreprocessor;
         m_cacheOptions = cacheOptions.Value;
     }

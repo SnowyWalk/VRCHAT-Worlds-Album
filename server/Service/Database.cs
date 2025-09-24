@@ -1,8 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using server.Core;
 using server.Schema;
-using System.Text.Json;
 
 namespace server.Service;
 
