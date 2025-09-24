@@ -18,9 +18,9 @@ public class WorldPreprocessor
     private static List<string> m_cachedStringList = new();
 
     public WorldPreprocessor(
-        Channel<Channels.ImageJob> imageJobChannel, 
-        Database database, 
-        VRCClient vrcClient, 
+        Channel<Channels.ImageJob> imageJobChannel,
+        Database database,
+        VRCClient vrcClient,
         IOptions<AppPathsOptions> appPathsOption,
         IPathUtil pathUtil)
     {
@@ -76,6 +76,7 @@ public class WorldPreprocessor
             }
 
             // Process Image
+            Log.Debug($"[Scan] need to modify? {modifiedAt != m_database.GetLastFolderModifiedTime(worldId)}");
             if (modifiedAt != m_database.GetLastFolderModifiedTime(worldId))
             {
                 List<string> storedImagePathList = m_database.GetWorldImagePathList(worldId);
@@ -83,13 +84,16 @@ public class WorldPreprocessor
 
                 // 새로운 이미지에 대한 처리
                 List<string> addedImagePathList = existImagePathList.Except(storedImagePathList).ToList();
+                Log.Debug($"[Scan] added: {string.Join(", ", addedImagePathList)}");
                 foreach (string addedImagePath in addedImagePathList)
                 {
+                    Log.Debug($"[Scan] job added: {worldId} {addedImagePath}");
                     m_imageJobChannel.Writer.TryWrite(new Channels.ImageJob(worldId, addedImagePath));
                 }
 
                 // 삭제된 이미지에 대한 처리
                 List<string> removedImagePathList = storedImagePathList.Except(existImagePathList).ToList();
+                Log.Debug($"[Scan] removed: {string.Join(", ", removedImagePathList)}");
                 foreach (string removedImagePath in removedImagePathList)
                 {
                     // 삭제된 이미지 database에서 제거
@@ -126,7 +130,9 @@ public class WorldPreprocessor
     private List<string> GetImagePathListInDirectory(DirectoryInfo dir)
     {
         List<string> result = new();
-        foreach (FileInfo imageFileInfo in dir.EnumerateFiles("*.png;*.jpg;*.jpeg;*.jfif;*.webp;*.bmp", SearchOption.TopDirectoryOnly))
+        foreach (FileInfo imageFileInfo in dir.EnumerateFiles("*", SearchOption.TopDirectoryOnly)
+                                            .Where(f => new[] { ".png", ".jpg", ".jpeg", ".jfif", ".webp", ".bmp" }
+                                            .Contains(f.Extension.ToLower())))
         {
             result.Add(m_pathUtil.ToRelativePath(imageFileInfo.FullName));
         }

@@ -29,19 +29,17 @@ public class ImageConvertWorker : BackgroundService
     {
         var reader = m_channel.Reader;
 
+        Log.Debug("[ImageConvertWorker] executeAsync!");
         while (await reader.WaitToReadAsync(stoppingToken))
         {
+            Log.Debug($"[ImageConvertWorker] waiting for job..");
             while (reader.TryRead(out Channels.ImageJob? job))
             {
+                Log.Debug($"[ImageConvertWorker] I have job! {job.worldId} {job.SourcePath}");
                 try
                 {
                     string thumbPath = m_pathUtil.GetThumbPath(job.worldId, job.SourcePath);
                     string viewPath = m_pathUtil.GetViewPath(job.worldId, job.SourcePath);
-                    if (File.Exists(thumbPath) && File.Exists(viewPath))
-                    {
-                        Log.Info($"Image Exists: {job.worldId} / {job.SourcePath}");
-                        continue;
-                    }
 
                     Log.Info($"Convert Start: {job.worldId} / {job.SourcePath}");
                     Stopwatch sw = new();
@@ -78,26 +76,32 @@ public class ImageConvertWorker : BackgroundService
 
         // Thumb
         string thumbPath = m_pathUtil.GetThumbPath(job.worldId, job.SourcePath);
-        if (File.Exists(thumbPath))
+        if (File.Exists(thumbPath) == false)
         {
             var webpQuality = Math.Clamp(m_imageOptions.ThumbQuality, 1, 100);
             using var data = image.Encode(SKEncodedImageFormat.Webp, webpQuality);
             if (data == null) throw new InvalidOperationException("WebP encode failed (Thumb)");
 
+            Log.Debug($"[ConvertToWebpAsync] CreateDirectory: {Path.GetDirectoryName(thumbPath)}");
             Directory.CreateDirectory(Path.GetDirectoryName(thumbPath)!);
+            Log.Debug($"[ConvertToWebpAsync] FileWrite: {thumbPath}");
             await File.WriteAllBytesAsync(thumbPath, data.ToArray(), ct);
+            Log.Debug($"[ConvertToWebpAsync] FileWrite end. size: {data.Size}");
         }
 
         // View
         string viewPath = m_pathUtil.GetViewPath(job.worldId, job.SourcePath);
-        if (File.Exists(viewPath))
+        if (File.Exists(viewPath) == false)
         {
             var webpQuality = Math.Clamp(m_imageOptions.ViewQuality, 1, 100);
             using var data = image.Encode(SKEncodedImageFormat.Webp, webpQuality);
             if (data == null) throw new InvalidOperationException("WebP encode failed (View)");
 
+            Log.Debug($"[ConvertToWebpAsync] CreateDirectory: {Path.GetDirectoryName(viewPath)}");
             Directory.CreateDirectory(Path.GetDirectoryName(viewPath)!);
+            Log.Debug($"[ConvertToWebpAsync] FileWrite: {viewPath}");
             await File.WriteAllBytesAsync(viewPath, data.ToArray(), ct);
+            Log.Debug($"[ConvertToWebpAsync] FileWrite end. size: {data.Size}");
         }
 
         // Update WorldData

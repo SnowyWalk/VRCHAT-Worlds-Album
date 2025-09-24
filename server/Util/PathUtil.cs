@@ -26,8 +26,8 @@ public sealed class PathUtil : IPathUtil
         => Path.GetRelativePath(_baseDir, path);
 
     public string GetThumbPath(string worldId, string srcPath)
-        => Path.Combine(_paths.ThumbImageDir, worldId, Path.GetFileName(srcPath));
+        => Path.Combine(_paths.ThumbImageDir, worldId, Path.ChangeExtension(Path.GetFileName(srcPath), ".webp"));
 
     public string GetViewPath(string worldId, string srcPath)
-        => Path.Combine(_paths.ViewImageDir, worldId, Path.GetFileName(srcPath));
+        => Path.Combine(_paths.ViewImageDir, worldId, Path.ChangeExtension(Path.GetFileName(srcPath), ".webp"));
 }

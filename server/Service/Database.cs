@@ -60,7 +60,8 @@ public class Database
 
     public void SaveToFile()
     {
-        using (FileStream openStream = File.OpenWrite(m_appPathOption.DatabaseJsonTempPath))
+        Directory.CreateDirectory(Path.GetDirectoryName(m_appPathOption.DatabaseJsonTempPath)!);
+        using (FileStream openStream = File.Create(m_appPathOption.DatabaseJsonTempPath))
         {
             lock (m_data)
                 JsonSerializer.Serialize(openStream, m_data);
@@ -148,7 +149,7 @@ public class Database
             if (m_data.TryGetValue(worldId, out WorldData? worldData) == false)
                 return result;
 
-            worldData.ImageDic?.Keys.Order().ToList().ForEach(result.Add);
+            worldData.ImageDic.Keys.Order().ToList().ForEach(result.Add);
         }
         return result;
     }
@@ -160,7 +161,7 @@ public class Database
             if (m_data.TryGetValue(worldId, out WorldData? worldData) == false)
                 throw new Exception($"[RemoveWorldImage] 없는 WorldId에 대한 쿼리: {worldId}");
 
-            if (worldData.ImageDic == null || worldData.ImageDic.ContainsKey(removedImagePath) == false)
+            if (worldData.ImageDic.ContainsKey(removedImagePath) == false)
                 throw new Exception($"[RemoveWorldImage] 없는 ImagePath에 대한 쿼리: {worldId} / {removedImagePath}");
 
             worldData.ImageDic.Remove(removedImagePath);
@@ -174,9 +175,6 @@ public class Database
         {
             if (m_data.TryGetValue(worldId, out WorldData? worldData) == false)
                 throw new Exception($"[AddWorldImage] 없는 WorldId에 대한 쿼리: {worldId} / {sourcePath}");
-
-            if (worldData.ImageDic == null)
-                throw new Exception($"[AddWorldImage] 없는 ImageDic에 대한 쿼리: {worldId} / {sourcePath}");
 
             if(worldData.ImageDic.ContainsKey(sourcePath))
                 Log.Error($"[AddWorldImage] 이미 있는데 이미지 정보를 추가하려한다: {worldId} / {sourcePath}");
