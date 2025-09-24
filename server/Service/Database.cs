@@ -53,6 +53,7 @@ public class Database
             DataCreatedAt = createdAt,
         };
         await m_db.Data.AddAsync(newWorld);
+        await m_db.SaveChangesAsync();
     }
 
     public async Task<DateTime> GetLastFolderModifiedTime(string worldId)
@@ -77,10 +78,12 @@ public class Database
 
     public async Task UpdateWorldMetaData(string worldId, WorldMetadata worldMetadata)
     {
-        await m_db.Data
-            .Where(e => e.WorldId == worldId)
-            .ExecuteUpdateAsync(e =>
-                e.SetProperty(x => x.Metadata, worldMetadata));
+        WorldData? worldData = await m_db.Data
+            .SingleOrDefaultAsync(e => e.WorldId == worldId);
+        if (worldData is null)
+            throw new Exception($"[IsWorldMetadataNeedToUpdate] 없는 WorldId에 대한 쿼리: {worldId}");
+        worldData.Metadata = worldMetadata;
+        await m_db.SaveChangesAsync();
     }
 
     public async Task<bool> IsWorldMetadataNeedToUpdate(string worldId)

@@ -15,8 +15,9 @@ public class DB : DbContext
         modelBuilder.Entity<WorldData>(e =>
         {
             e.Property(x => x.WorldId).IsRequired().HasMaxLength(42);
+            e.HasKey(x => x.WorldId);
 
-            e.OwnsOne(x => x.Metadata);
+            e.OwnsOne(x => x.Metadata).HasKey(y => y.id);
             e.OwnsOne(x => x.Category);
             e.OwnsOne(x => x.Description);
 

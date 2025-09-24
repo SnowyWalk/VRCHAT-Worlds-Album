@@ -24,6 +24,10 @@ public class WorldMetadata
         return UpdatedAt + ttl <= DateTime.UtcNow;
     }
 
+    public WorldMetadata()
+    {
+    }
+
     public WorldMetadata(VRCWorldMetadata vrcWorldMetadata)
     {
         id = vrcWorldMetadata.Id;
