@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using server.Schema;
 using server.Service;
+using server.Util;
+using System.Buffers.Text;
 using System.Text.Json;
 namespace server.Controllers;
 
@@ -28,10 +30,24 @@ public class MainController : ControllerBase
         return Ok(JsonSerializer.Serialize(worldMetadata));
     }
 
-    [HttpGet("page/{page:int}")]
-    public ActionResult<List<WorldMetadata>> GetPage([FromRoute] int page = 0, [FromQuery] int pageCount = 10)
+    [HttpGet("worlddatalist")]
+    public async Task<ActionResult<List<WorldMetadata>>> GetPage([FromQuery] int pageCount = 10)
     {
         m_worldPreprocessor.Scan(null);
-        return Ok(m_database.GetWorldDataListByPaging(page, pageCount));
+        pageCount = Math.Clamp(1, pageCount, 100);
+        List<WorldData> worldDataList = await m_database.GetWorldDataListFirstPage(pageCount);
+        return Ok(worldDataList);
+    }
+    
+    [HttpGet("worlddatalist/{cursor}")]
+    public async Task<ActionResult<List<WorldMetadata>>> GetPage([FromRoute] string cursor, [FromQuery] int pageCount = 10)
+    {
+        m_worldPreprocessor.Scan(null);
+        
+        (DateTime dateTime, string worldId) = CursorUtil.DecodeCursor(cursor);
+        
+        pageCount = Math.Clamp(1, pageCount, 100);
+        List<WorldData> worldDataList = await m_database.GetWorldDataListAfterCursor(dateTime, worldId, pageCount);
+        return Ok(worldDataList);
     }
 }

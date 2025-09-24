@@ -3,31 +3,27 @@ namespace server.Util;
 
 public interface IPathUtil
 {
-    string ToRelativePath(string path);
-    string GetThumbPath(string worldId, string srcPath);
-    string GetViewPath(string worldId, string srcPath);
+    string GetThumbPath(string worldId, string filename);
+    string GetViewPath(string worldId, string filename);
 }
 
 public sealed class PathUtil : IPathUtil
 {
-    private readonly AppPathsOptions _paths;
-    private readonly string _baseDir;
+    private readonly AppPathsOptions m_paths;
+    private readonly string m_contentRootPath;
 
     public PathUtil(IOptions<AppPathsOptions> paths, IHostEnvironment env)
     {
-        _paths = paths.Value;
-        // BaseDir이 설정 안 됐으면 콘텐츠 루트를 기본값으로
-        _baseDir = string.IsNullOrWhiteSpace(_paths.BaseDir)
-            ? env.ContentRootPath
-            : _paths.BaseDir;
+        m_paths = paths.Value;
+        m_contentRootPath = env.ContentRootPath;
     }
 
-    public string ToRelativePath(string path)
-        => Path.GetRelativePath(_baseDir, path);
+    // public string ToRelativePath(string path)
+    //     => Path.GetRelativePath(_baseDir, path);
 
-    public string GetThumbPath(string worldId, string srcPath)
-        => Path.Combine(_paths.ThumbImageDir, worldId, Path.ChangeExtension(Path.GetFileName(srcPath), ".webp"));
+    public string GetThumbPath(string worldId, string filename)
+        => Path.Combine(m_contentRootPath, m_paths.ThumbImageDir, worldId, Path.ChangeExtension(Path.GetFileName(filename), ".webp"));
 
-    public string GetViewPath(string worldId, string srcPath)
-        => Path.Combine(_paths.ViewImageDir, worldId, Path.ChangeExtension(Path.GetFileName(srcPath), ".webp"));
+    public string GetViewPath(string worldId, string filename)
+        => Path.Combine(m_contentRootPath, m_paths.ViewImageDir, worldId, Path.ChangeExtension(Path.GetFileName(filename), ".webp"));
 }

@@ -9,35 +9,32 @@ namespace server.Service;
 public class WorldPreprocessor
 {
     private readonly Channel<Channels.ImageJob> m_imageJobChannel;
-    private readonly Database m_database;
     private readonly VRCClient m_vrcClient;
     private readonly AppPathsOptions m_appPathsOptions;
     private readonly IPathUtil m_pathUtil;
+    private readonly IServiceScopeFactory m_scopeFactory;
     public bool IsScanWorking { get; private set; }
-
-    private static List<string> m_cachedStringList = new();
 
     public WorldPreprocessor(
         Channel<Channels.ImageJob> imageJobChannel,
-        Database database,
+        IServiceScopeFactory scopeFactory,
         VRCClient vrcClient,
         IOptions<AppPathsOptions> appPathsOption,
         IPathUtil pathUtil)
     {
         m_imageJobChannel = imageJobChannel;
-        m_database = database;
         m_vrcClient = vrcClient;
         m_appPathsOptions = appPathsOption.Value;
         m_pathUtil = pathUtil;
+        m_scopeFactory = scopeFactory;
     }
 
     public async Task Scan(CancellationToken? cancellationToken)
     {
         if (IsScanWorking)
-        {
-            Log.Debug($"[Scan] Already Scanning.");
             return;
-        }
+        
+        Database database = m_scopeFactory.CreateScope().ServiceProvider.GetRequiredService<Database>();
 
         IsScanWorking = true;
         Log.Info($"[Scan] Start Scanning.");
@@ -47,7 +44,6 @@ public class WorldPreprocessor
         DirectoryInfo currentDir = new DirectoryInfo(m_appPathsOptions.ScanFolderPath);
         foreach (DirectoryInfo worldFolder in currentDir.EnumerateDirectories())
         {
-            Log.Debug($"[Scan] worldFolder: {worldFolder}");
 
             cancellationToken?.ThrowIfCancellationRequested();
 
@@ -57,54 +53,45 @@ public class WorldPreprocessor
             DateTime createdAt = worldFolder.CreationTimeUtc != modifiedAt ? worldFolder.CreationTimeUtc : DateTime.UtcNow; // BirthTime이 없으면 현재 시각으로 생성
 
             // Process WorldMetadata
-            Log.Debug($"[Scan] HasWorld: {worldId} = {m_database.HasWorld(worldId)}");
 
-            if (m_database.HasWorld(worldId) == false)
+            if (await database.HasWorldData(worldId) == false)
             {
-                Log.Debug($"[Scan] AddWorldData: {worldId}, {createdAt}");
-                m_database.AddWorldData(worldId, createdAt);
+                await database.AddWorldData(worldId, createdAt);
             }
 
-            Log.Debug($"[Scan] IsWorldMetadataNeedToUpdate: {worldId}, {m_database.IsWorldMetadataNeedToUpdate(worldId)}");
-            if (m_database.IsWorldMetadataNeedToUpdate(worldId))
+            if (await database.IsWorldMetadataNeedToUpdate(worldId))
             {
-                Log.Debug($"[Scan] Lets go Fetch {worldId}");
                 WorldMetadata? worldMetadata = await m_vrcClient.FetchVRCWorldMetadata(worldId);
-                Log.Debug($"[Scan] Fetched Data: {worldId}, {worldMetadata}");
                 if (worldMetadata != null)
-                    m_database.UpdateWorldMetaData(worldId, worldMetadata);
+                    await database.UpdateWorldMetaData(worldId, worldMetadata);
             }
 
             // Process Image
-            Log.Debug($"[Scan] need to modify? {modifiedAt != m_database.GetLastFolderModifiedTime(worldId)}");
-            if (modifiedAt != m_database.GetLastFolderModifiedTime(worldId))
+            if (modifiedAt != await database.GetLastFolderModifiedTime(worldId))
             {
-                List<string> storedImagePathList = m_database.GetWorldImagePathList(worldId);
-                List<string> existImagePathList = GetImagePathListInDirectory(worldFolder);
+                List<string> storedImageFilenameList = await database.GetWorldImageFileNameList(worldId);
+                List<string> existImageFilenameList = GetImageFilenameListInDirectory(worldFolder);
 
                 // 새로운 이미지에 대한 처리
-                List<string> addedImagePathList = existImagePathList.Except(storedImagePathList).ToList();
-                Log.Debug($"[Scan] added: {string.Join(", ", addedImagePathList)}");
-                foreach (string addedImagePath in addedImagePathList)
+                List<string> addedImageFilenameList = existImageFilenameList.Except(storedImageFilenameList).ToList();
+                foreach (string addedImageFilename in addedImageFilenameList)
                 {
-                    Log.Debug($"[Scan] job added: {worldId} {addedImagePath}");
-                    m_imageJobChannel.Writer.TryWrite(new Channels.ImageJob(worldId, addedImagePath));
+                    m_imageJobChannel.Writer.TryWrite(new Channels.ImageJob(worldId, addedImageFilename));
                 }
 
                 // 삭제된 이미지에 대한 처리
-                List<string> removedImagePathList = storedImagePathList.Except(existImagePathList).ToList();
-                Log.Debug($"[Scan] removed: {string.Join(", ", removedImagePathList)}");
-                foreach (string removedImagePath in removedImagePathList)
+                List<string> removedImageFilenameList = storedImageFilenameList.Except(existImageFilenameList).ToList();
+                foreach (string removedImageFilename in removedImageFilenameList)
                 {
                     // 삭제된 이미지 database에서 제거
-                    m_database.RemoveWorldImage(worldId, removedImagePath);
+                    await database.RemoveWorldImage(worldId, removedImageFilename);
 
                     // 파일 삭제
-                    string thumbPath = m_pathUtil.GetThumbPath(worldId, removedImagePath);
+                    string thumbPath = m_pathUtil.GetThumbPath(worldId, removedImageFilename);
                     if (File.Exists(thumbPath))
                         File.Delete(thumbPath);
 
-                    string viewPath = m_pathUtil.GetViewPath(worldId, removedImagePath);
+                    string viewPath = m_pathUtil.GetViewPath(worldId, removedImageFilename);
                     if (File.Exists(viewPath))
                         File.Delete(viewPath);
                 }
@@ -117,8 +104,8 @@ public class WorldPreprocessor
                 //      added가 5 있는데 잘 되겠지 하고 modified 갱신
                 //      문제 발생해서 강종됨
                 //      이미지 처리할게 남아있지만 modifiedAt 비교에서 prune됨 
-                if (addedImagePathList.Count == 0)
-                    m_database.UpdateLastFolderModifiedTime(worldId, modifiedAt);
+                if (addedImageFilenameList.Count == 0)
+                    await database.UpdateLastFolderModifiedTime(worldId, modifiedAt);
             }
         }
 
@@ -127,14 +114,14 @@ public class WorldPreprocessor
         Log.Info($"[Scan] End Scanning. Elapsed Time: {sw.ElapsedMilliseconds}ms");
     }
 
-    private List<string> GetImagePathListInDirectory(DirectoryInfo dir)
+    private List<string> GetImageFilenameListInDirectory(DirectoryInfo dir)
     {
         List<string> result = new();
         foreach (FileInfo imageFileInfo in dir.EnumerateFiles("*", SearchOption.TopDirectoryOnly)
-                                            .Where(f => new[] { ".png", ".jpg", ".jpeg", ".jfif", ".webp", ".bmp" }
-                                            .Contains(f.Extension.ToLower())))
+            .Where(f => new[] { ".png", ".jpg", ".jpeg", ".jfif", ".webp", ".bmp" }
+                .Contains(f.Extension.ToLower())))
         {
-            result.Add(m_pathUtil.ToRelativePath(imageFileInfo.FullName));
+            result.Add(imageFileInfo.Name);
         }
         return result;
     }

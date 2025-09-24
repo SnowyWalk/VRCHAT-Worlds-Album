@@ -20,8 +20,6 @@ public class StartupOrchestratorService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        m_database.LoadFromFile();
-        
         while (stoppingToken.IsCancellationRequested == false)
         {
             await m_worldPreprocessor.Scan(stoppingToken);

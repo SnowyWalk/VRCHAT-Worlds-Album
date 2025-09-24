@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using server.Core;
 using server.Schema;
@@ -7,183 +8,122 @@ namespace server.Service;
 
 public class Database
 {
-    private Dictionary<string, WorldData> m_data = new();
-    private readonly AppPathsOptions m_appPathOption;
-    private readonly ImageOptions m_imageOptions;
     private readonly CacheOptions m_cacheOptions;
+    private readonly DB m_db;
 
-    public Database(IOptions<AppPathsOptions> appPathOption, IOptions<ImageOptions> imageOptions, IOptions<CacheOptions> cacheOptions)
+    public Database(IOptions<CacheOptions> cacheOptions, DB db)
     {
-        m_appPathOption = appPathOption.Value;
-        m_imageOptions = imageOptions.Value;
         m_cacheOptions = cacheOptions.Value;
+        m_db = db;
     }
 
     #region API
 
-    public List<WorldData> GetWorldDataListByPaging(int page = 0, int pageCount = 10)
+    public async Task<List<WorldData>> GetWorldDataListFirstPage(int pageCount = 10)
     {
-        List<WorldData> result;
-        lock (m_data)
-        {
-            result = m_data.Values.OrderByDescending(key => key.DataCreatedAt).Skip(page * pageCount).Take(pageCount).ToList();
-        }
-        return result;
+        return await m_db.Data
+            .OrderByDescending(e => e.DataCreatedAt)
+            .ThenBy(e => e.WorldId)
+            .Take(pageCount)
+            .ToListAsync();
     }
 
-    #endregion
-
-    #region File
-
-    public void LoadFromFile()
+    public async Task<List<WorldData>> GetWorldDataListAfterCursor(DateTime cursorDateTime, string subKey, int pageCount = 10)
     {
-        lock (m_data)
-            m_data.Clear();
-
-        if (File.Exists(m_appPathOption.DatabaseJsonPath) == false)
-        {
-            Log.Info($"[Database.LoadFromFile] 파일이 없어서 로드 실패: {m_appPathOption.DatabaseJsonPath}");
-            return;
-        }
-
-        using FileStream openStream = File.OpenRead(m_appPathOption.DatabaseJsonPath);
-        var tempData = JsonSerializer.Deserialize<Dictionary<string, WorldData>>(openStream);
-
-        lock (m_data)
-        {
-            if (tempData != null)
-                m_data = tempData;
-            else
-                m_data.Clear();
-        }
-    }
-
-    public void SaveToFile()
-    {
-        Directory.CreateDirectory(Path.GetDirectoryName(m_appPathOption.DatabaseJsonTempPath)!);
-        using (FileStream openStream = File.Create(m_appPathOption.DatabaseJsonTempPath))
-        {
-            lock (m_data)
-                JsonSerializer.Serialize(openStream, m_data);
-        }
-        File.Move(m_appPathOption.DatabaseJsonTempPath, m_appPathOption.DatabaseJsonPath, overwrite: true);
+        return await m_db.Data
+            .Where(e => e.DataCreatedAt < cursorDateTime ||
+                e.DataCreatedAt == cursorDateTime && string.Compare(e.WorldId, subKey) > 0)
+            .OrderByDescending(e => e.DataCreatedAt)
+            .ThenBy(e => e.WorldId)
+            .Take(pageCount)
+            .ToListAsync();
     }
 
     #endregion
 
     #region WorldData
 
-    public bool HasWorld(string worldId)
+    public async Task<bool> HasWorldData(string worldId)
     {
-        lock (m_data)
-            return m_data.ContainsKey(worldId);
+        return await m_db.Data.AnyAsync(e => e.WorldId == worldId);
     }
 
-    public void AddWorldData(string worldId, DateTime createdAt)
+    public async Task AddWorldData(string worldId, DateTime createdAt)
     {
         WorldData newWorld = new WorldData() {
+            WorldId = worldId,
             DataCreatedAt = createdAt,
         };
-
-        lock (m_data)
-            m_data[worldId] = newWorld;
-
-        SaveToFile();
+        await m_db.Data.AddAsync(newWorld);
     }
 
-    public DateTime GetLastFolderModifiedTime(string worldId)
+    public async Task<DateTime> GetLastFolderModifiedTime(string worldId)
     {
-        lock (m_data)
-        {
-            if (m_data.TryGetValue(worldId, out WorldData? worldData) == false)
-                throw new Exception($"[GetLastFolderModifiedTime] 없는 WorldId에 대한 쿼리: {worldId}");
-
-            return worldData.LastFolderModifiedAt;
-        }
+        DateTime lastFolderModifiedAt = await m_db.Data.AsNoTracking().Where(e => e.WorldId == worldId).Select(e => e.LastFolderModifiedAt).SingleOrDefaultAsync();
+        if (lastFolderModifiedAt == default(DateTime))
+            throw new Exception($"[GetLastFolderModifiedTime] 없는 WorldId에 대한 쿼리: {worldId}");
+        return lastFolderModifiedAt;
     }
 
-    public void UpdateLastFolderModifiedTime(string worldId, DateTime modifiedAt)
+    public async Task UpdateLastFolderModifiedTime(string worldId, DateTime modifiedAt)
     {
-        lock (m_data)
-        {
-            if (m_data.TryGetValue(worldId, out WorldData? worldData) == false)
-                throw new Exception($"[UpdateLastFolderModifiedTime] 없는 WorldId에 대한 쿼리: {worldId}");
-
-            worldData.LastFolderModifiedAt = modifiedAt;
-        }
-        SaveToFile();
+        await m_db.Data
+            .Where(e => e.WorldId == worldId)
+            .ExecuteUpdateAsync(e =>
+                e.SetProperty(x => x.LastFolderModifiedAt, modifiedAt));
     }
 
     #endregion
 
     #region WorldMetadata
 
-    public void UpdateWorldMetaData(string worldId, WorldMetadata worldMetadata)
+    public async Task UpdateWorldMetaData(string worldId, WorldMetadata worldMetadata)
     {
-        lock (m_data)
-            m_data[worldId].Metadata = worldMetadata;
-
-        SaveToFile();
+        await m_db.Data
+            .Where(e => e.WorldId == worldId)
+            .ExecuteUpdateAsync(e =>
+                e.SetProperty(x => x.Metadata, worldMetadata));
     }
 
-    public bool IsWorldMetadataNeedToUpdate(string worldId)
+    public async Task<bool> IsWorldMetadataNeedToUpdate(string worldId)
     {
-        lock (m_data)
-        {
-            if (m_data.TryGetValue(worldId, out WorldData? worldData) == false)
-                throw new Exception($"[IsWorldMetadataNeedToUpdate] 없는 WorldId에 대한 쿼리: {worldId}");
+        WorldData? worldData = await m_db.Data
+            .AsNoTracking()
+            .SingleOrDefaultAsync(e => e.WorldId == worldId);
 
-            return worldData.Metadata == null || worldData.Metadata.IsExpired(m_cacheOptions.WorldMetadataTTL);
-        }
+        if (worldData is null)
+            throw new Exception($"[IsWorldMetadataNeedToUpdate] 없는 WorldId에 대한 쿼리: {worldId}");
+
+        return worldData.Metadata == null || worldData.Metadata.IsExpired(m_cacheOptions.WorldMetadataTTL);
     }
 
     #endregion
 
     #region WorldImage
 
-    public List<string> GetWorldImagePathList(string worldId)
+    public async Task<List<string>> GetWorldImageFileNameList(string worldId)
     {
-        List<string> result = new();
-        lock (m_data)
-        {
-            if (m_data.TryGetValue(worldId, out WorldData? worldData) == false)
-                return result;
-
-            worldData.ImageDic.Keys.Order().ToList().ForEach(result.Add);
-        }
-        return result;
+        return await m_db.Data
+            .AsNoTracking()
+            .Where(e => e.WorldId == worldId)
+            .SelectMany(e => e.ImageList.Select(e => e.Filename))
+            .ToListAsync();
     }
 
-    public void RemoveWorldImage(string worldId, string removedImagePath)
+    public async Task RemoveWorldImage(string worldId, string removedImageFilename)
     {
-        lock (m_data)
-        {
-            if (m_data.TryGetValue(worldId, out WorldData? worldData) == false)
-                throw new Exception($"[RemoveWorldImage] 없는 WorldId에 대한 쿼리: {worldId}");
-
-            if (worldData.ImageDic.ContainsKey(removedImagePath) == false)
-                throw new Exception($"[RemoveWorldImage] 없는 ImagePath에 대한 쿼리: {worldId} / {removedImagePath}");
-
-            worldData.ImageDic.Remove(removedImagePath);
-        }
-        SaveToFile();
+        await m_db.Data.Where(e => e.WorldId == worldId).SelectMany(e => e.ImageList.Where(x => x.Filename == removedImageFilename)).ExecuteDeleteAsync();
     }
 
-    public void AddWorldImage(string worldId, string sourcePath, string thumbPath, string viewPath, int width, int height)
+    public async Task AddWorldImage(string worldId, string filename, int width, int height)
     {
-        lock (m_data)
-        {
-            if (m_data.TryGetValue(worldId, out WorldData? worldData) == false)
-                throw new Exception($"[AddWorldImage] 없는 WorldId에 대한 쿼리: {worldId} / {sourcePath}");
-
-            if(worldData.ImageDic.ContainsKey(sourcePath))
-                Log.Error($"[AddWorldImage] 이미 있는데 이미지 정보를 추가하려한다: {worldId} / {sourcePath}");
-
-            worldData.ImageDic[sourcePath] = new WorldImage(sourcePath, thumbPath, viewPath, width, height);
-        }
-        SaveToFile();
+        WorldData? worldData = await m_db.Data.SingleOrDefaultAsync(e => e.WorldId == worldId);
+        if (worldData is null)
+            throw new Exception($"[AddWorldImage] 없는 WorldId에 대한 쿼리: {worldId} / {filename}");
+        worldData.ImageList.Add(new WorldImage(worldId, filename, width, height));
+        await m_db.SaveChangesAsync();
     }
-    
+
     #endregion
 
 }

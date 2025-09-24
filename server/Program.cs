@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using server.Core;
 using server.Service;
@@ -6,6 +7,10 @@ using System.Threading.Channels;
 
 var builder = WebApplication.CreateBuilder(args);
 var env = builder.Environment;
+
+string path = Path.Combine(builder.Environment.ContentRootPath, "app.db");
+string conn = $"Data Source={path};Cache=Shared;Foreign Keys=True;Journal Mode=WAL;Synchronous=Normal;busy_timeout=3000;Temp Store=Memory;";
+builder.Services.AddDbContext<DB>(options => options.UseSqlite(conn));
 
 builder.Services.AddOptions<AppPathsOptions>()
     .Bind(builder.Configuration.GetSection("AppPaths"))
@@ -45,7 +50,7 @@ var channel = Channel.CreateUnbounded<Channels.ImageJob>(new UnboundedChannelOpt
 builder.Services.AddSingleton(channel);
 builder.Services.AddHostedService<ImageConvertWorker>();
 
-builder.Services.AddSingleton<Database>();
+builder.Services.AddScoped<Database>();
 builder.Services.AddSingleton<VRCClient>();
 builder.Services.AddSingleton<WorldPreprocessor>();
 
