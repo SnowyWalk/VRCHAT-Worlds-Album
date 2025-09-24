@@ -21,6 +21,15 @@ export type WorldPayload = {
     images: Dict<string>[];
 } | null;
 
+function encodeCursor(dt: Date, worldId: string): string {
+    // ISO8601 UTC 문자열로 변환
+    const dtIso = dt.toISOString(); // ex) "2025-09-25T04:35:46.440Z"
+    const raw = `${dtIso}|${worldId}`;
+
+    // UTF-8 → Base64
+    return btoa(unescape(encodeURIComponent(raw)));
+}
+
 export default function Page() {
     const skeletons = Array.from({length: 10});
     const [worlds, setWorlds] = useState<WorldPayload[]>([]);
