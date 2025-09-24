@@ -45,3 +45,4 @@ backend/static/
 *.pyc
 server/.idea/
 *.DotSettings.user
+server/static/
