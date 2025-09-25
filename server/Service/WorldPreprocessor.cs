@@ -67,12 +67,13 @@ public class WorldPreprocessor
                 Log.Info($"[{worldId}] World Metadata Fetch");
                 WorldMetadata? worldMetadata = await m_vrcClient.FetchVRCWorldMetadata(worldId);
                 if (worldMetadata != null)
-                    await database.UpdateWorldMetaData(worldId, worldMetadata);
+                    await database.UpdateWorldMetaData(worldMetadata);
             }
 
             // Process Image
             if (modifiedAt != await database.GetLastFolderModifiedTime(worldId))
             {
+                Log.Info($"[{worldId}] 변경된 폴더 감지");
                 List<string> storedImageFilenameList = await database.GetWorldImageFileNameList(worldId);
                 List<string> existImageFilenameList = GetImageFilenameListInDirectory(worldFolder);
 

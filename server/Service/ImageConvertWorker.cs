@@ -55,7 +55,12 @@ public class ImageConvertWorker : BackgroundService
     private async Task ConvertToWebpAsync(Channels.ImageJob job, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-
+        
+        using var scope = m_scopeFactory.CreateScope();
+        Database database = scope.ServiceProvider.GetRequiredService<Database>();
+        if (await database.HasWorldImage(job.worldId, job.SourceImageFilename)) // 이미 존재함
+            return;
+        
         byte[] input = await File.ReadAllBytesAsync(m_pathUtil.GetOriginImagePath(job.worldId, job.SourceImageFilename), ct);
         SKData? skData = SKData.CreateCopy(input);
         using var codec = SKCodec.Create(skData) ?? throw new InvalidOperationException("Invalid image");
@@ -91,8 +96,6 @@ public class ImageConvertWorker : BackgroundService
         }
 
         // Update WorldData
-        using var scope = m_scopeFactory.CreateScope();
-        Database database = scope.ServiceProvider.GetRequiredService<Database>();
         await database.AddWorldImage(job.worldId, job.SourceImageFilename, width, height);
     }
 }
