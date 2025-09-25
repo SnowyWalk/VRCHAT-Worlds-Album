@@ -57,10 +57,14 @@ public class WorldPreprocessor
 
             // Process WorldMetadata
             if (await database.HasWorldData(worldId) == false)
+            {
+                Log.Info($"[{worldId}] 새로운 World 추가");
                 await database.AddWorldData(worldId, createdAt);
+            }
 
             if (await database.IsWorldMetadataNeedToUpdate(worldId))
             {
+                Log.Info($"[{worldId}] World Metadata Fetch");
                 WorldMetadata? worldMetadata = await m_vrcClient.FetchVRCWorldMetadata(worldId);
                 if (worldMetadata != null)
                     await database.UpdateWorldMetaData(worldId, worldMetadata);
@@ -74,6 +78,8 @@ public class WorldPreprocessor
 
                 // 새로운 이미지에 대한 처리
                 List<string> addedImageFilenameList = existImageFilenameList.Except(storedImageFilenameList).ToList();
+                if (addedImageFilenameList.Count > 0)
+                    Log.Info($"[{worldId}] 추가된 이미지 처리 {addedImageFilenameList.Count}개");
                 foreach (string addedImageFilename in addedImageFilenameList)
                 {
                     m_imageJobChannel.Writer.TryWrite(new Channels.ImageJob(worldId, addedImageFilename));
@@ -81,6 +87,8 @@ public class WorldPreprocessor
 
                 // 삭제된 이미지에 대한 처리
                 List<string> removedImageFilenameList = storedImageFilenameList.Except(existImageFilenameList).ToList();
+                if (removedImageFilenameList.Count > 0)
+                    Log.Info($"[{worldId}] 제거된 이미지 처리 {removedImageFilenameList.Count}개");
                 foreach (string removedImageFilename in removedImageFilenameList)
                 {
                     // 삭제된 이미지 database에서 제거
