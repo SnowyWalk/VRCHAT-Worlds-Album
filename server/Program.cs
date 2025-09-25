@@ -9,9 +9,14 @@ var builder = WebApplication.CreateBuilder(args);
 var env = builder.Environment;
 
 string path = Path.Combine(builder.Environment.ContentRootPath, "app.db");
-string conn = $"Data Source={path};Cache=Shared;Foreign Keys=True;Journal Mode=WAL;Synchronous=Normal;busy_timeout=3000;Temp Store=Memory;";
-builder.Services.AddDbContext<DB>(options => options.UseSqlite(conn));
-// builder.Services.AddDbContextFactory<DB>(options => options.UseSqlite(conn));
+//string conn = $"Data Source={path};Cache=Shared;Foreign Keys=True;Journal Mode=WAL;Synchronous=Normal;busy_timeout=3000;Temp Store=Memory;";
+//string conn = $"Data Source={path};Cache=Shared;Foreign Keys=True;Journal Mode=WAL;Synchronous=Normal;Default Timeout=3;Temp Store=Memory;";
+string conn = $"Data Source={path};Cache=Shared;Default Timeout=3;";
+builder.Services.AddDbContext<DB>(options =>
+    options
+        .UseSqlite(conn)                       // provider 설정
+        .AddInterceptors(new SqlitePragmaInterceptor())); // 여기서 인터셉터 추가
+
 builder.Services.AddScoped<Database>();
 
 builder.Services.AddOptions<AppPathsOptions>()
@@ -25,6 +30,7 @@ builder.Services.AddOptions<AppPathsOptions>()
         var root = env.ContentRootPath; // 콘텐츠 루트
         if (!string.IsNullOrWhiteSpace(opts.BaseDir))
             opts.BaseDir            = Abs(root, opts.BaseDir);
+        opts.OriginImageDir         = Abs(root, opts.OriginImageDir);
         opts.ThumbImageDir          = Abs(root, opts.ThumbImageDir);
         opts.ViewImageDir           = Abs(root, opts.ViewImageDir);
         opts.DatabaseJsonPath       = Abs(root, opts.DatabaseJsonPath);
@@ -79,6 +85,13 @@ app.UseStaticFiles(new StaticFileOptions
 
 app.UseAuthorization();
 app.MapControllers();
+
+// 이건 dotnet ef database update 를 해주는건데 매번 하니까 로그 너무 많이 뜸
+//using (var scope = app.Services.CreateScope())
+//{
+//    var db = scope.ServiceProvider.GetRequiredService<DB>();
+//    db.Database.Migrate();
+//}
 
 app.Run();
 

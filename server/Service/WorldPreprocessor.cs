@@ -13,7 +13,10 @@ public class WorldPreprocessor
     private readonly AppPathsOptions m_appPathsOptions;
     private readonly IPathUtil m_pathUtil;
     private readonly IServiceScopeFactory m_scopeFactory;
-    public bool IsScanWorking { get; private set; }
+    public bool IsScanWorking
+    {
+        get; private set;
+    }
 
     public WorldPreprocessor(
         Channel<Channels.ImageJob> imageJobChannel,
@@ -45,7 +48,6 @@ public class WorldPreprocessor
         DirectoryInfo currentDir = new DirectoryInfo(m_appPathsOptions.ScanFolderPath);
         foreach (DirectoryInfo worldFolder in currentDir.EnumerateDirectories())
         {
-
             cancellationToken?.ThrowIfCancellationRequested();
 
             string worldId = worldFolder.Name;
@@ -54,11 +56,8 @@ public class WorldPreprocessor
             DateTime createdAt = worldFolder.CreationTimeUtc != modifiedAt ? worldFolder.CreationTimeUtc : DateTime.UtcNow; // BirthTime이 없으면 현재 시각으로 생성
 
             // Process WorldMetadata
-
             if (await database.HasWorldData(worldId) == false)
-            {
                 await database.AddWorldData(worldId, createdAt);
-            }
 
             if (await database.IsWorldMetadataNeedToUpdate(worldId))
             {
@@ -88,11 +87,11 @@ public class WorldPreprocessor
                     await database.RemoveWorldImage(worldId, removedImageFilename);
 
                     // 파일 삭제
-                    string thumbPath = m_pathUtil.GetThumbPath(worldId, removedImageFilename);
+                    string thumbPath = m_pathUtil.GetThumbImagePath(worldId, removedImageFilename);
                     if (File.Exists(thumbPath))
                         File.Delete(thumbPath);
 
-                    string viewPath = m_pathUtil.GetViewPath(worldId, removedImageFilename);
+                    string viewPath = m_pathUtil.GetViewImagePath(worldId, removedImageFilename);
                     if (File.Exists(viewPath))
                         File.Delete(viewPath);
                 }

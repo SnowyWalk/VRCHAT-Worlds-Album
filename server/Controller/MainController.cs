@@ -33,7 +33,7 @@ public class MainController : ControllerBase
     [HttpGet("worlddatalist")]
     public async Task<ActionResult<List<WorldMetadata>>> GetPage([FromQuery] int pageCount = 10)
     {
-        m_worldPreprocessor.Scan(null);
+        await m_worldPreprocessor.Scan(null);
         pageCount = Math.Clamp(1, pageCount, 100);
         List<WorldData> worldDataList = await m_database.GetWorldDataListFirstPage(pageCount);
         return Ok(worldDataList);
@@ -42,7 +42,7 @@ public class MainController : ControllerBase
     [HttpGet("worlddatalist/{cursor}")]
     public async Task<ActionResult<List<WorldMetadata>>> GetPage([FromRoute] string cursor, [FromQuery] int pageCount = 10)
     {
-        m_worldPreprocessor.Scan(null);
+        await m_worldPreprocessor.Scan(null);
         
         (DateTime dateTime, string worldId) = CursorUtil.DecodeCursor(cursor);
         

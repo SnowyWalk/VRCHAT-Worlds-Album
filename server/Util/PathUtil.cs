@@ -3,8 +3,9 @@ namespace server.Util;
 
 public interface IPathUtil
 {
-    string GetThumbPath(string worldId, string filename);
-    string GetViewPath(string worldId, string filename);
+    string GetOriginImagePath(string worldId, string filename);
+    string GetThumbImagePath(string worldId, string filename);
+    string GetViewImagePath(string worldId, string filename);
 }
 
 public sealed class PathUtil : IPathUtil
@@ -21,9 +22,12 @@ public sealed class PathUtil : IPathUtil
     // public string ToRelativePath(string path)
     //     => Path.GetRelativePath(_baseDir, path);
 
-    public string GetThumbPath(string worldId, string filename)
+    public string GetOriginImagePath(string worldId, string filename)
+        => Path.Combine(m_contentRootPath, m_paths.OriginImageDir, worldId, Path.GetFileName(filename));
+
+    public string GetThumbImagePath(string worldId, string filename)
         => Path.Combine(m_contentRootPath, m_paths.ThumbImageDir, worldId, Path.ChangeExtension(Path.GetFileName(filename), ".webp"));
 
-    public string GetViewPath(string worldId, string filename)
+    public string GetViewImagePath(string worldId, string filename)
         => Path.Combine(m_contentRootPath, m_paths.ViewImageDir, worldId, Path.ChangeExtension(Path.GetFileName(filename), ".webp"));
 }

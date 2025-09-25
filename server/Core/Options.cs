@@ -1,6 +1,7 @@
 public sealed class AppPathsOptions
 {
     public string? BaseDir { get; set; }
+    public string OriginImageDir { get; set; } = "";
     public string ThumbImageDir { get; set; } = "";
     public string ViewImageDir { get; set; } = "";
     public string DatabaseJsonPath { get; set; } = "";

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using server.Core;
 using server.Schema;
 
 namespace server.Service;
@@ -48,7 +49,8 @@ public class Database
 
     public async Task AddWorldData(string worldId, DateTime createdAt)
     {
-        WorldData newWorld = new WorldData() {
+        WorldData newWorld = new WorldData()
+        {
             WorldId = worldId,
             DataCreatedAt = createdAt,
         };
@@ -58,10 +60,10 @@ public class Database
 
     public async Task<DateTime> GetLastFolderModifiedTime(string worldId)
     {
-        DateTime lastFolderModifiedAt = await m_db.Data.AsNoTracking().Where(e => e.WorldId == worldId).Select(e => e.LastFolderModifiedAt).SingleOrDefaultAsync();
-        if (lastFolderModifiedAt == default(DateTime))
+        var worldData = await m_db.Data.AsNoTracking().SingleOrDefaultAsync(e => e.WorldId == worldId);
+        if (worldData is null)
             throw new Exception($"[GetLastFolderModifiedTime] 없는 WorldId에 대한 쿼리: {worldId}");
-        return lastFolderModifiedAt;
+        return worldData.LastFolderModifiedAt;
     }
 
     public async Task UpdateLastFolderModifiedTime(string worldId, DateTime modifiedAt)

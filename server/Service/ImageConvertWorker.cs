@@ -46,7 +46,7 @@ public class ImageConvertWorker : BackgroundService
                 }
                 catch (Exception ex)
                 {
-                    Log.Error($"Failed converting {job.worldId} / {job.SourcePath}: {ex}");
+                    Log.Error($"Failed converting {job.worldId} / {job.SourceImageFilename}: {ex}");
                 }
             }
         }
@@ -56,7 +56,7 @@ public class ImageConvertWorker : BackgroundService
     {
         ct.ThrowIfCancellationRequested();
 
-        byte[] input = await File.ReadAllBytesAsync(job.SourcePath, ct);
+        byte[] input = await File.ReadAllBytesAsync(m_pathUtil.GetOriginImagePath(job.worldId, job.SourceImageFilename), ct);
         SKData? skData = SKData.CreateCopy(input);
         using var codec = SKCodec.Create(skData) ?? throw new InvalidOperationException("Invalid image");
 
@@ -67,7 +67,7 @@ public class ImageConvertWorker : BackgroundService
         int height = codec.Info.Height;
 
         // Thumb
-        string thumbPath = m_pathUtil.GetThumbPath(job.worldId, job.SourcePath);
+        string thumbPath = m_pathUtil.GetThumbImagePath(job.worldId, job.SourceImageFilename);
         if (File.Exists(thumbPath) == false)
         {
             var webpQuality = Math.Clamp(m_imageOptions.ThumbQuality, 1, 100);
@@ -79,7 +79,7 @@ public class ImageConvertWorker : BackgroundService
         }
 
         // View
-        string viewPath = m_pathUtil.GetViewPath(job.worldId, job.SourcePath);
+        string viewPath = m_pathUtil.GetViewImagePath(job.worldId, job.SourceImageFilename);
         if (File.Exists(viewPath) == false)
         {
             var webpQuality = Math.Clamp(m_imageOptions.ViewQuality, 1, 100);
@@ -93,6 +93,6 @@ public class ImageConvertWorker : BackgroundService
         // Update WorldData
         using var scope = m_scopeFactory.CreateScope();
         Database database = scope.ServiceProvider.GetRequiredService<Database>();
-        await database.AddWorldImage(job.worldId, job.SourcePath, width, height);
+        await database.AddWorldImage(job.worldId, job.SourceImageFilename, width, height);
     }
 }
