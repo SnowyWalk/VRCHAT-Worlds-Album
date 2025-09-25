@@ -6,11 +6,11 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:8080/api/:path*", // FastAPI로 프록시
+        destination: "http://localhost:5027/api/:path*", // ASP.NET서버로 프록시
       },
          {
         source: "/static/:path*",
-        destination: "http://localhost:8080/static/:path*", // FastAPI로 프록시
+        destination: "http://localhost:5027/static/:path*", // ASP.NET서버로 프록시
       },
     ]
   },
