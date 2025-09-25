@@ -6,10 +6,11 @@ import {Skeleton} from "@/components/ui/skeleton";
 import {useState} from "react";
 import Dict = NodeJS.Dict;
 import {Separator} from "@/components/ui/separator";
+import Image from "next/image";
 
 export type WorldCardProps = {
-    id: string;
-    name: string;
+    worldId: string;
+    worldName: string;
     authorId: string;
     authorName: string;
     imageUrl: string;
@@ -19,12 +20,16 @@ export type WorldCardProps = {
     heat: number;
     popularity: number;
     tags: string[];
-    images: Dict<string>[];
+    imageList: Dict<string>[];
+    category: string[] | null;
+    description: string | null;
+    dataCreatedAt: Date;
+    lastFolderModifiedAt: Date;
 };
 
 export default function WorldCard({
-                                      id,
-                                      name,
+                                      worldId,
+                                      worldName,
                                       authorId,
                                       authorName,
                                       imageUrl,
@@ -34,13 +39,34 @@ export default function WorldCard({
                                       heat,
                                       popularity,
                                       tags,
-                                      images,
+                                      imageList,
+                                      category,
+                                      description,
+                                      dataCreatedAt,
+                                      lastFolderModifiedAt,
                                   }: WorldCardProps) {
     const [loaded, setLoaded] = useState(false);
     const [error, setError] = useState(false);
 
+    console.log("WorldCardProps:", {
+        worldName,
+        capacity,
+        visits,
+        favorites,
+        heat,
+        popularity,
+        tags,
+        imageList,
+        category,
+        description,
+        dataCreatedAt,
+        lastFolderModifiedAt
+    });
+
     return (
         <Card className="overflow-hidden py-0 justify-between items-center gap-0">
+
+
             <AspectRatio ratio={4 / 3}>
                 <CardHeader className="p-0 relative h-full">
                     {!loaded && !error && (
@@ -49,7 +75,7 @@ export default function WorldCard({
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                         src={imageUrl}
-                        alt={name}
+                        alt={worldName}
                         className={`absolute inset-0 w-full h-full object-cover bg-muted transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
                         loading="lazy"
                         onLoad={() => setLoaded(true)}
@@ -66,10 +92,17 @@ export default function WorldCard({
                     )}
                 </CardHeader>
             </AspectRatio>
+
+
             <CardContent className="flex flex-col justify-between justify-start items-center w-full grow gap-0 px-4.5">
-                <div className="text-lg font-bold text-center my-3 p-0 min-h-[52px] flex flex-col items-center w-full grow-0 justify-center leading-6.5">{name}</div>
+                <div
+                    className="text-lg font-bold text-center my-3 p-0 min-h-[52px] flex flex-col items-center w-full grow-0 justify-center leading-6.5">{worldName}</div>
                 <div className="text-sm text-center mb-2 text-muted-foreground grow-0">{authorName}</div>
                 <Separator className="m-0"/>
+            </CardContent>
+
+
+            <CardFooter className="flex flex-col justify-between justify-start items-center w-full grow gap-0 px-4.5">
                 {tags?.length > 0 && (
                     <div className="m-5 p-0 flex flex-wrap gap-2">
                         {tags.filter((t) => t.startsWith('author_tag_')).map((t) => (
@@ -84,54 +117,44 @@ export default function WorldCard({
                 )}
 
                 {/* 썸네일 리스트: 최대 6개, 초과 시 6번째 위에 반투명 오버레이 +N */}
-                {Array.isArray(images) && images.length > 0 && (
+                {Array.isArray(imageList) && imageList.length > 0 && (
                     <div className="mt-2 w-full">
                         <div className="grid grid-cols-6 gap-1">
-                            {images.slice(0, 5).map((img, idx) => {
-                                const thumb = typeof img === "string" ? img : (img as Dict<string>)["thumb"] ?? "";
+                            {imageList.slice(0, 6).map((dic: Dict<string>, i: number) => {
                                 return (
                                     // eslint-disable-next-line @next/next/no-img-element
-                                    <img
-                                        key={`${thumb}-${idx}`}
-                                        src={`/static/${thumb}`}
-                                        alt=""
-                                        className="h-12 w-full object-cover rounded-sm bg-muted"
-                                        loading="lazy"
-                                    />
-                                );
-                            })}
-                            {/* 6번째 셀 */}
-                            {(() => {
-                                const sixth = images[5];
-                                if (!sixth) return null;
-                                const thumb = typeof sixth === "string" ? sixth : (sixth as Dict<string>)["thumb"] ?? "";
-                                const extra = Math.max(0, images.length - 6);
-                                return (
-                                    <div className="relative h-12 w-full rounded-sm overflow-hidden">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
-                                            src={`/static/${thumb}`}
+                                    <AspectRatio ratio={1 / 1} key={`${dic['worldId']}-${dic['filename']}`}
+                                                 className="rounded-lg overflow-hidden border-accent border-[1px]">
+                                        <Image
+                                            src={`/static/Thumb/${dic['worldId']}/${replaceExtension(dic['filename']!, ".webp")}`}
                                             alt=""
-                                            className="h-full w-full object-cover bg-muted"
+                                            fill
+                                            className="h-full w-full object-cover rounded-sm bg-muted"
                                             loading="lazy"
                                         />
-                                        {extra > 0 && (
-                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                                <span className="text-xs font-semibold text-white">+{extra}</span>
+
+                                        {
+                                            i == 5 && Math.max(0, imageList.length - 6) > 0 &&
+                                            <div
+                                                className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                                <span
+                                                    className="text-base font-semibold text-white">+{Math.max(0, imageList.length - 6)}</span>
                                             </div>
-                                        )}
-                                    </div>
+                                        }
+
+                                    </AspectRatio>
                                 );
-                            })()}
+                            })}
                         </div>
                     </div>
                 )}
-            </CardContent>
-            <CardFooter className="p-4 mt-4 text-xs text-muted-foreground flex gap-3">
-                {visits !== undefined && <span>방문 {visits.toLocaleString()}</span>}
-                {favorites !== undefined && <span>즐겨찾기 {favorites.toLocaleString()}</span>}
-                {capacity !== undefined && <span>정원 {capacity}</span>}
+                {/*<Separator className="m-0"/>*/}
+                {/*{visits !== undefined && <span className="text-xs">방문 {visits.toLocaleString()}</span>}*/}
+                {/*{favorites !== undefined && <span className="text-xs">즐겨찾기 {favorites.toLocaleString()}</span>}*/}
+                {/*{capacity !== undefined && <span className="text-xs">정원 {capacity}</span>}*/}
             </CardFooter>
+
+
         </Card>
     );
 }
@@ -156,4 +179,18 @@ export function WorldCardSkeleton() {
             </CardFooter>
         </Card>
     );
+}
+
+function replaceExtension(filename: string, newExt: string): string {
+    // newExt 앞에 "."이 없으면 붙여줌
+    if (!newExt.startsWith(".")) {
+        newExt = "." + newExt;
+    }
+
+    const idx = filename.lastIndexOf(".");
+    if (idx === -1) {
+        // 확장자가 없는 경우 그냥 덧붙임
+        return filename + newExt;
+    }
+    return filename.substring(0, idx) + newExt;
 }
