@@ -20,7 +20,10 @@ public class Database
 
     public async Task<List<WorldData>> GetWorldDataListFirstPage(int pageCount = 10)
     {
-        return await m_db.World
+        return await m_db.Data
+            .Include(e => e.ImageList)
+            .Include(e => e.Metadata)
+            .Include(e => e.CategoryList)
             .OrderByDescending(e => e.DataCreatedAt)
             .ThenBy(e => e.WorldId)
             .Take(pageCount)
@@ -29,7 +32,10 @@ public class Database
 
     public async Task<List<WorldData>> GetWorldDataListAfterCursor(DateTime cursorDateTime, string subKey, int pageCount = 10)
     {
-        return await m_db.World
+        return await m_db.Data
+            .Include(e => e.ImageList)
+            .Include(e => e.Metadata)
+            .Include(e => e.CategoryList)
             .Where(e => e.DataCreatedAt < cursorDateTime ||
                 e.DataCreatedAt == cursorDateTime && string.Compare(e.WorldId, subKey) > 0)
             .OrderByDescending(e => e.DataCreatedAt)
@@ -44,22 +50,23 @@ public class Database
 
     public async Task<bool> HasWorldData(string worldId)
     {
-        return await m_db.World.AnyAsync(e => e.WorldId == worldId);
+        return await m_db.Data.AnyAsync(e => e.WorldId == worldId);
     }
 
     public async Task AddWorldData(string worldId, DateTime createdAt)
     {
-        WorldData newWorld = new WorldData() {
+        WorldData newWorld = new WorldData()
+        {
             WorldId = worldId,
             DataCreatedAt = createdAt,
         };
-        await m_db.World.AddAsync(newWorld);
+        await m_db.Data.AddAsync(newWorld);
         await m_db.SaveChangesAsync();
     }
 
     public async Task<DateTime> GetLastFolderModifiedTime(string worldId)
     {
-        var worldData = await m_db.World
+        var worldData = await m_db.Data
             .AsNoTracking()
             .SingleOrDefaultAsync(e => e.WorldId == worldId);
         if (worldData is null)
@@ -69,10 +76,10 @@ public class Database
 
     public async Task UpdateLastFolderModifiedTime(string worldId, DateTime modifiedAt)
     {
-        await m_db.World
+        await m_db.Data
             .Where(e => e.WorldId == worldId)
             .ExecuteUpdateAsync(e =>
-                e.SetProperty(x => x.LastFolderModifiedAt, modifiedAt));
+                e.SetProperty(x => x.LastFolderModifiedAt, _ => modifiedAt));
     }
 
     #endregion
@@ -94,7 +101,9 @@ public class Database
         TimeSpan ttl = m_cacheOptions.WorldMetadataTTL;
         var threshold = DateTime.UtcNow - ttl;
 
-        bool isAlreadyFresh = await m_db.Metadata.AsNoTracking().AnyAsync(e => e.WorldId == worldId && e.UpdatedAt > threshold);
+        bool isAlreadyFresh = await m_db.Metadata
+            .AsNoTracking()
+            .AnyAsync(e => e.WorldId == worldId && e.UpdatedAt > threshold);
         return isAlreadyFresh == false;
     }
 
@@ -104,18 +113,17 @@ public class Database
 
     public async Task<List<string>> GetWorldImageFileNameList(string worldId)
     {
-        return await m_db.World
+        return await m_db.Image
             .AsNoTracking()
             .Where(e => e.WorldId == worldId)
-            .SelectMany(e => e.ImageList.Select(e => e.Filename))
+            .Select(e => e.Filename)
             .ToListAsync();
     }
 
     public async Task RemoveWorldImage(string worldId, string removedImageFilename)
     {
-        await m_db.World
-            .Where(e => e.WorldId == worldId)
-            .SelectMany(e => e.ImageList.Where(x => x.Filename == removedImageFilename))
+        await m_db.Image
+            .Where(e => e.WorldId == worldId && e.Filename == removedImageFilename)
             .ExecuteDeleteAsync();
     }
 
@@ -135,4 +143,30 @@ public class Database
 
     #endregion
 
+    #region WorldCategory
+
+    public async Task UpdateWorldDataCategoryList(string worldId, List<int> categoryIdList)
+    {
+        var world = await m_db.Data
+            .Include(w => w.CategoryList)
+            .FirstAsync(w => w.WorldId == worldId);
+
+        // 기존 카테고리 전부 제거
+        world.CategoryList.Clear();
+
+        // 새 카테고리 로드 후 교체
+        if (categoryIdList.Count > 0)
+        {
+            var newCategoryList = await m_db.Category
+                .Where(c => categoryIdList.Contains(c.Id))
+                .ToListAsync();
+
+            foreach (var c in newCategoryList)
+                world.CategoryList.Add(c);
+        }
+
+        await m_db.SaveChangesAsync();
+    }
+
+    #endregion
 }

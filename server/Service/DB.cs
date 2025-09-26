@@ -4,9 +4,10 @@ namespace server.Service;
 
 public class DB : DbContext
 {
-    public DbSet<WorldData> World => Set<WorldData>();
+    public DbSet<WorldData> Data => Set<WorldData>();
     public DbSet<WorldImage> Image => Set<WorldImage>();
     public DbSet<WorldMetadata> Metadata => Set<WorldMetadata>();
+    public DbSet<WorldCategory> Category => Set<WorldCategory>();
 
     public DB(DbContextOptions<DB> options) : base(options)
     {
@@ -23,12 +24,15 @@ public class DB : DbContext
                 .WithOne(y => y.WorldData)
                 .HasForeignKey<WorldMetadata>(z => z.WorldId)
                 .OnDelete(DeleteBehavior.Cascade);
-            
-            e.OwnsOne(x => x.Category);
+
             e.OwnsOne(x => x.Description);
-            
-            e.Navigation(x => x.Metadata).AutoInclude();
-            e.Navigation(x => x.ImageList).AutoInclude();
+
+            e.HasMany(e => e.CategoryList)
+                .WithMany(x => x.WorldDataList);
+
+            //e.Navigation(x => x.Metadata).AutoInclude();
+            //e.Navigation(x => x.ImageList).AutoInclude();
+            //e.Navigation(x => x.CategoryList).AutoInclude();
 
             e.HasIndex(x => x.WorldId).IsUnique();
             e.HasIndex(x => x.DataCreatedAt);
@@ -59,7 +63,7 @@ public class DB : DbContext
 
             e.Property(x => x.WorldId).IsRequired().HasMaxLength(42);
             e.Property(x => x.WorldName);
-            e.Property(x => x.AuthorId).HasMaxLength(42);;
+            e.Property(x => x.AuthorId).HasMaxLength(42);
             e.Property(x => x.AuthorName);
             e.Property(x => x.ImageUrl);
             e.Property(x => x.Capacity);
@@ -71,6 +75,13 @@ public class DB : DbContext
             e.Property(x => x.UpdatedAt).IsConcurrencyToken();
 
             e.HasIndex(x => x.WorldId).IsUnique();
+        });
+
+        modelBuilder.Entity<WorldCategory>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).IsRequired();
+            e.HasIndex(x => x.Name).IsUnique();
         });
     }
 }

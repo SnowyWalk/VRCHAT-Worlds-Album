@@ -1,6 +1,12 @@
+using System.Text.Json.Serialization;
+
 namespace server.Schema;
 
 public class WorldCategory
 {
-    public List<string> CategoryList { get; private set; } = new ();
+    public int Id { get; private set; }
+    public string Name { get; private set; } = null!;
+
+    [JsonIgnore]
+    public List<WorldData> WorldDataList { get; set; } = new();
 }

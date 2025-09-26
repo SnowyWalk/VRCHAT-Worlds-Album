@@ -10,9 +10,9 @@ namespace server.Controllers;
 [Route("/api")]
 public class MainController : ControllerBase
 {
-    private Database m_database;
-    private VRCClient m_vrcClient;
-    private WorldPreprocessor m_worldPreprocessor;
+    private readonly Database m_database;
+    private readonly VRCClient m_vrcClient;
+    private readonly WorldPreprocessor m_worldPreprocessor;
     
     public MainController(Database database, VRCClient vrcClient, WorldPreprocessor worldPreprocessor)
     {

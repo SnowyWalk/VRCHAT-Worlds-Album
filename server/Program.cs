@@ -9,8 +9,6 @@ var builder = WebApplication.CreateBuilder(args);
 var env = builder.Environment;
 
 string path = Path.Combine(builder.Environment.ContentRootPath, "Database/app.db");
-//string conn = $"Data Source={path};Cache=Shared;Foreign Keys=True;Journal Mode=WAL;Synchronous=Normal;busy_timeout=3000;Temp Store=Memory;";
-//string conn = $"Data Source={path};Cache=Shared;Foreign Keys=True;Journal Mode=WAL;Synchronous=Normal;Default Timeout=3;Temp Store=Memory;";
 string conn = $"Data Source={path};Cache=Shared;Default Timeout=3;";
 builder.Services.AddDbContext<DB>(options =>
     options
