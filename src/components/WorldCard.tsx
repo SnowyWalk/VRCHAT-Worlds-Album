@@ -7,6 +7,11 @@ import {useState} from "react";
 import Dict = NodeJS.Dict;
 import {Separator} from "@/components/ui/separator";
 import Image from "next/image";
+import {Label, PolarRadiusAxis, RadialBar, RadialBarChart} from "recharts"
+import {ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent,} from "@/components/ui/chart"
+import {HoverCard, HoverCardContent, HoverCardTrigger} from "@/components/ui/hover-card";
+import {Badge} from "@/components/ui/badge";
+import Link from "next/link";
 
 export type WorldCardProps = {
     worldId: string;
@@ -63,6 +68,9 @@ export default function WorldCard({
         lastFolderModifiedAt
     });
 
+    tags = tags.filter((t) => t.startsWith('author_tag_') || t.startsWith('category_tag_'));
+    const hasImageList = Array.isArray(imageList) && imageList.length > 0;
+
     return (
         <Card className="overflow-hidden py-0 justify-between items-center gap-0">
 
@@ -94,31 +102,57 @@ export default function WorldCard({
             </AspectRatio>
 
 
-            <CardContent className="flex flex-col justify-between justify-start items-center w-full grow gap-0 px-4.5">
+            <CardContent className="flex flex-col justify-start items-center w-full grow gap-0 px-4.5">
+                {/* 월드 제목 */}
                 <div
-                    className="text-lg font-bold text-center my-3 p-0 min-h-[52px] flex flex-col items-center w-full grow-0 justify-center leading-6.5">{worldName}</div>
-                <div className="text-sm text-center mb-2 text-muted-foreground grow-0">{authorName}</div>
+                    className="text-lg font-bold text-center my-3 p-0 min-h-[52px] flex flex-col items-center w-full grow-0 justify-center leading-6.5">
+                    {worldName}
+                </div>
+
+                {/* 월드 제작자 */}
+                <div className="text-sm text-center mb-2 text-muted-foreground grow-0">
+                    {authorName}
+                </div>
                 <Separator className="m-0"/>
-            </CardContent>
 
+                {/* 월드 기본 정보 */}
+                {makeVisitorChart(visits, favorites, "mx-auto w-full h-[90px] my-4")}
+                {/* 월드 정원*/}
+                <div className="flex flex-col text-sm text-muted-foreground grow-0 justify-center items-center mt-[0.25rem]">
+                    <div className="text-xs">최대 인원</div>
+                    <div className="text-shadow-xs">{capacity}</div>
+                </div>
+                <Separator className="m-0"/>
 
-            <CardFooter className="flex flex-col justify-between justify-start items-center w-full grow gap-0 px-4.5">
+                {/* 월드 태그 */}
                 {tags?.length > 0 && (
-                    <div className="m-5 p-0 flex flex-wrap gap-2">
-                        {tags.filter((t) => t.startsWith('author_tag_')).map((t) => (
-                            <span
-                                key={t}
-                                className="inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium bg-secondary text-secondary-foreground"
-                            >
+                    <div className="flex flex-wrap flex-row justify-center gap-1 mt-4">
+                        {tags.map((t) => (
+                            <Badge key={t}>
                                 {t.replace(/^author_tag_/, '')}
-                            </span>
+                            </Badge>
                         ))}
                     </div>
                 )}
 
+                {/* 월드 Description */}
+                <div className="text-sm text-secondary-foreground grow-0 mt-4">
+                    뉴비 추천 월드입니다. 시간적, 물리적 제약을 초월하는 VR의 특장점을 제대로 겪어볼 수 있습니다. 방구석에서 실제 일본의 동굴을 체험할 수 있다고?! 정말 아름다운 일이 아닐 수
+                    없습니다.
+                </div>
+
+
+            </CardContent>
+
+
+            <CardFooter className="flex flex-col justify-end items-center w-full grow gap-0 px-4.5 mb-[0.25rem] mt-[0.25rem]">
+
+
+
                 {/* 썸네일 리스트: 최대 6개, 초과 시 6번째 위에 반투명 오버레이 +N */}
-                {Array.isArray(imageList) && imageList.length > 0 && (
-                    <div className="mt-2 w-full">
+                {hasImageList && <Separator className="m-0 mt-[0.25rem]"/>}
+                {hasImageList && (
+                    <div className="mt-[0.25rem] w-full">
                         <div className="grid grid-cols-6 gap-1">
                             {imageList.slice(0, 6).map((dic: Dict<string>, i: number) => {
                                 return (
@@ -148,15 +182,106 @@ export default function WorldCard({
                         </div>
                     </div>
                 )}
-                {/*<Separator className="m-0"/>*/}
-                {/*{visits !== undefined && <span className="text-xs">방문 {visits.toLocaleString()}</span>}*/}
-                {/*{favorites !== undefined && <span className="text-xs">즐겨찾기 {favorites.toLocaleString()}</span>}*/}
-                {/*{capacity !== undefined && <span className="text-xs">정원 {capacity}</span>}*/}
+
             </CardFooter>
 
 
         </Card>
     );
+}
+
+function makeVisitorChart(visits: number, favorites: number, className: string | undefined) {
+    const chartData = [{visitors: visits, favorites: favorites}]
+    const chartConfig = {
+        visitors: {
+            label: "방문자 수",
+            color: "var(--chart-2)",
+        },
+        favorites: {
+            label: "즐겨찾기",
+            color: "var(--chart-1)",
+        },
+    } satisfies ChartConfig
+
+    return (
+        <ChartContainer
+            config={chartConfig}
+            className={className}
+        >
+            <RadialBarChart
+                data={chartData}
+                startAngle={180}
+                endAngle={0}
+                innerRadius={80}
+                outerRadius={130}
+                className="p-0 m-0"
+                cy={90}
+            >
+                <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent/>}
+                />
+                <PolarRadiusAxis tick={false} axisLine={false} tickLine={false}>
+                    <Label
+                        content={({viewBox}) => {
+                            if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                                return (
+                                    <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
+                                        <HoverCard openDelay={10} closeDelay={100}>
+                                            <HoverCardTrigger>
+                                                <tspan
+                                                    x={viewBox.cx}
+                                                    y={(viewBox.cy || 0) - 42 - 2}
+                                                    className="fill-foreground text-sm">
+                                                    ⭐{(favorites / visits * 100).toFixed(2)}%{"　"}
+                                                </tspan>
+                                            </HoverCardTrigger>
+                                            <HoverCardContent className="text-center bg-muted text-xs p-3 py-1.5 w-full"
+                                                              align="center" side="top">
+                                                방문자 즐겨찾기 비율
+                                                <p/>
+                                                {(favorites / visits * 100).toFixed(2)}%
+                                                <p/>
+                                                {favorites.toLocaleString()}회
+                                            </HoverCardContent>
+                                        </HoverCard>
+                                        <tspan
+                                            x={viewBox.cx}
+                                            y={(viewBox.cy || 0) - 16 - 2}
+                                            className="fill-foreground text-2xl font-bold">
+                                            {visits.toLocaleString()}
+                                        </tspan>
+                                        <tspan
+                                            x={viewBox.cx}
+                                            y={(viewBox.cy || 0) - 1}
+                                            className="fill-muted-foreground"
+                                        >
+                                            Visitors
+                                        </tspan>
+                                    </text>
+                                )
+                            }
+                        }}
+                    />
+                </PolarRadiusAxis>
+                <RadialBar
+                    dataKey="favorites"
+                    fill="var(--color-favorites)"
+                    cornerRadius={1.5}
+                    stackId={1}
+                />
+                <RadialBar
+                    dataKey="visitors"
+                    cornerRadius={1.5}
+                    stackId={1}
+                    fill="var(--color-visitors)"
+                    opacity={0.5}
+                />
+
+
+            </RadialBarChart>
+        </ChartContainer>
+    )
 }
 
 
