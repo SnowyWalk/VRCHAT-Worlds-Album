@@ -118,12 +118,19 @@ export default function WorldCard({
                 {/* 월드 기본 정보 */}
                 {makeVisitorChart(visits, favorites, "mx-auto w-full h-[90px] my-4")}
                 {/* 월드 정원*/}
-                <div className="flex flex-col text-sm text-muted-foreground grow-0 justify-center items-center mt-[0.25rem]">
+                <div
+                    className="flex flex-col text-sm text-muted-foreground grow-0 justify-center items-center mt-[0.25rem]">
                     <div className="text-xs">최대 인원</div>
                     <div className="text-shadow-xs">{capacity}</div>
                 </div>
                 <Separator className="m-0"/>
 
+                {/* 월드 Description */}
+                <div className="text-sm text-secondary-foreground grow-0 mt-4">
+                    뉴비 추천 월드입니다. 시간적, 물리적 제약을 초월하는 VR의 특장점을 제대로 겪어볼 수 있습니다. 방구석에서 실제 일본의 동굴을 체험할 수 있다고?! 정말 아름다운 일이 아닐 수
+                    없습니다.
+                </div>
+                
                 {/* 월드 태그 */}
                 {tags?.length > 0 && (
                     <div className="flex flex-wrap flex-row justify-center gap-1 mt-4">
@@ -135,18 +142,11 @@ export default function WorldCard({
                     </div>
                 )}
 
-                {/* 월드 Description */}
-                <div className="text-sm text-secondary-foreground grow-0 mt-4">
-                    뉴비 추천 월드입니다. 시간적, 물리적 제약을 초월하는 VR의 특장점을 제대로 겪어볼 수 있습니다. 방구석에서 실제 일본의 동굴을 체험할 수 있다고?! 정말 아름다운 일이 아닐 수
-                    없습니다.
-                </div>
-
-
             </CardContent>
 
 
-            <CardFooter className="flex flex-col justify-end items-center w-full grow gap-0 px-4.5 mb-[0.25rem] mt-[0.25rem]">
-
+            <CardFooter
+                className="flex flex-col justify-end items-center w-full grow gap-0 px-4.5 mb-[0.25rem] mt-[0.25rem]">
 
 
                 {/* 썸네일 리스트: 최대 6개, 초과 시 6번째 위에 반투명 오버레이 +N */}
