@@ -12,6 +12,7 @@ import {ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent,} from "@
 import {HoverCard, HoverCardContent, HoverCardTrigger} from "@/components/ui/hover-card";
 import {Badge} from "@/components/ui/badge";
 import Link from "next/link";
+import {replaceExtension} from "@/utils/common-util";
 
 export type WorldCardProps = {
     worldId: string;
@@ -30,6 +31,7 @@ export type WorldCardProps = {
     description: string | null;
     dataCreatedAt: Date;
     lastFolderModifiedAt: Date;
+    onClickThumbnail: (imageList: Dict<string>[]) => void;
 };
 
 export default function WorldCard({
@@ -49,24 +51,25 @@ export default function WorldCard({
                                       description,
                                       dataCreatedAt,
                                       lastFolderModifiedAt,
+                                      onClickThumbnail,
                                   }: WorldCardProps) {
     const [loaded, setLoaded] = useState(false);
     const [error, setError] = useState(false);
 
-    console.log("WorldCardProps:", {
-        worldName,
-        capacity,
-        visits,
-        favorites,
-        heat,
-        popularity,
-        tags,
-        imageList,
-        category,
-        description,
-        dataCreatedAt,
-        lastFolderModifiedAt
-    });
+    // console.log("WorldCardProps:", {
+    //     worldName,
+    //     capacity,
+    //     visits,
+    //     favorites,
+    //     heat,
+    //     popularity,
+    //     tags,
+    //     imageList,
+    //     category,
+    //     description,
+    //     dataCreatedAt,
+    //     lastFolderModifiedAt
+    // });
 
     tags = tags.filter((t) => t.startsWith('author_tag_') || t.startsWith('category_tag_'));
     const hasImageList = Array.isArray(imageList) && imageList.length > 0;
@@ -80,18 +83,20 @@ export default function WorldCard({
                     {!loaded && !error && (
                         <Skeleton className="absolute inset-0 w-full h-full rounded-none"/>
                     )}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                        src={imageUrl}
-                        alt={worldName}
-                        className={`absolute inset-0 w-full h-full object-cover bg-muted transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
-                        loading="lazy"
-                        onLoad={() => setLoaded(true)}
-                        onError={() => {
-                            setError(true);
-                            setLoaded(false);
-                        }}
-                    />
+                    <Link href={`https://vrchat.com/home/world/${worldId}`} target="_blank" rel="noopener noreferrer">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                            src={imageUrl}
+                            alt={worldName}
+                            className={`absolute inset-0 w-full h-full object-cover bg-muted transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+                            loading="lazy"
+                            onLoad={() => setLoaded(true)}
+                            onError={() => {
+                                setError(true);
+                                setLoaded(false);
+                            }}
+                        />
+                    </Link>
                     {error && (
                         <div
                             className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground bg-muted">
@@ -102,52 +107,57 @@ export default function WorldCard({
             </AspectRatio>
 
 
-            <CardContent className="flex flex-col justify-start items-center w-full grow gap-0 px-4.5">
+            <CardContent className="flex flex-col justify-start items-center w-full gap-0 px-4.5 grow-0">
                 {/* 월드 제목 */}
                 <div
                     className="text-lg font-bold text-center my-3 p-0 min-h-[52px] flex flex-col items-center w-full grow-0 justify-center leading-6.5">
-                    {worldName}
+                    <Link href={`https://vrchat.com/home/world/${worldId}`} target="_blank" rel="noopener noreferrer"
+                          className="hover:underline">
+                        {worldName}
+                    </Link>
                 </div>
 
                 {/* 월드 제작자 */}
                 <div className="text-sm text-center mb-2 text-muted-foreground grow-0">
-                    {authorName}
+                    <Link href={`https://vrchat.com/home/user/${authorId}`} target="_blank" rel="noopener noreferrer"
+                          className="hover:underline">
+                        {authorName}
+                    </Link>
                 </div>
                 <Separator className="m-0"/>
 
                 {/* 월드 기본 정보 */}
-                {makeVisitorChart(visits, favorites, "mx-auto w-full h-[90px] my-4")}
+                {makeVisitorChart(visits, favorites, "mx-auto w-full h-[90px] my-4 grow-0")}
                 {/* 월드 정원*/}
                 <div
-                    className="flex flex-col text-sm text-muted-foreground grow-0 justify-center items-center mt-[0.25rem]">
+                    className="flex flex-col text-sm text-muted-foreground grow-0 justify-center items-center mt-[0.25rem] mb-1">
                     <div className="text-xs">최대 인원</div>
                     <div className="text-shadow-xs">{capacity}</div>
                 </div>
                 <Separator className="m-0"/>
 
                 {/* 월드 Description */}
-                <div className="text-sm text-secondary-foreground grow-0 mt-4">
-                    뉴비 추천 월드입니다. 시간적, 물리적 제약을 초월하는 VR의 특장점을 제대로 겪어볼 수 있습니다. 방구석에서 실제 일본의 동굴을 체험할 수 있다고?! 정말 아름다운 일이 아닐 수
-                    없습니다.
-                </div>
-                
+                {description && (
+                    <div className="text-sm text-secondary-foreground grow-0 mt-4 mb-[0.25rem]">
+                        {description}
+                    </div>
+                )}
+            </CardContent>
+
+
+            <CardFooter
+                className="flex flex-col justify-end items-center w-full grow gap-0 px-1 mb-[0.25rem]">
+
                 {/* 월드 태그 */}
                 {tags?.length > 0 && (
-                    <div className="flex flex-wrap flex-row justify-center gap-1 mt-4">
+                    <div className="flex flex-wrap flex-row justify-center gap-1 mt-[0.25rem]">
                         {tags.map((t) => (
-                            <Badge key={t}>
+                            <Badge variant="secondary" key={t}>
                                 {t.replace(/^author_tag_/, '')}
                             </Badge>
                         ))}
                     </div>
                 )}
-
-            </CardContent>
-
-
-            <CardFooter
-                className="flex flex-col justify-end items-center w-full grow gap-0 px-4.5 mb-[0.25rem] mt-[0.25rem]">
-
 
                 {/* 썸네일 리스트: 최대 6개, 초과 시 6번째 위에 반투명 오버레이 +N */}
                 {hasImageList && <Separator className="m-0 mt-[0.25rem]"/>}
@@ -156,15 +166,16 @@ export default function WorldCard({
                         <div className="grid grid-cols-6 gap-1">
                             {imageList.slice(0, 6).map((dic: Dict<string>, i: number) => {
                                 return (
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <AspectRatio ratio={1 / 1} key={`${dic['worldId']}-${dic['filename']}`}
-                                                 className="rounded-lg overflow-hidden border-accent border-[1px]">
+                                    <AspectRatio ratio={1} key={`${dic['worldId']}-${dic['filename']}`}
+                                                 className="rounded-lg overflow-hidden border-accent border-[1px] hover:cursor-pointer hover:border-secondary hover:ring-1">
                                         <Image
                                             src={`/static/Thumb/${dic['worldId']}/${replaceExtension(dic['filename']!, ".webp")}`}
                                             alt=""
                                             fill
                                             className="h-full w-full object-cover rounded-sm bg-muted"
                                             loading="lazy"
+                                            decoding="async"
+                                            onClick={() => onClickThumbnail(imageList)}
                                         />
 
                                         {
@@ -304,18 +315,4 @@ export function WorldCardSkeleton() {
             </CardFooter>
         </Card>
     );
-}
-
-function replaceExtension(filename: string, newExt: string): string {
-    // newExt 앞에 "."이 없으면 붙여줌
-    if (!newExt.startsWith(".")) {
-        newExt = "." + newExt;
-    }
-
-    const idx = filename.lastIndexOf(".");
-    if (idx === -1) {
-        // 확장자가 없는 경우 그냥 덧붙임
-        return filename + newExt;
-    }
-    return filename.substring(0, idx) + newExt;
 }

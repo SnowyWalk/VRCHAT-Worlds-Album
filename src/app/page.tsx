@@ -3,6 +3,8 @@
 import {useEffect, useState} from "react";
 import WorldCard, {WorldCardSkeleton} from "@/components/WorldCard";
 import Dict = NodeJS.Dict;
+import ImageView from "@/components/ImageView";
+import {PeekCarousel} from "@/components/PeekCarousel";
 
 const PAGE_API = "/api/worlddatalist/";
 const PAGE_SIZE = 10;
@@ -32,20 +34,14 @@ export type WorldPayload = {
     lastFolderModifiedAt: Date;
 } | null;
 
-function encodeCursor(dt: Date, worldId: string): string {
-    // ISO8601 UTC 문자열로 변환
-    const dtIso = dt.toISOString(); // ex) "2025-09-25T04:35:46.440Z"
-    const raw = `${dtIso}|${worldId}`;
 
-    // UTF-8 → Base64
-    return btoa(unescape(encodeURIComponent(raw)));
-}
 
 export default function Page() {
     const skeletons = Array.from({length: PAGE_SIZE});
     const [worlds, setWorlds] = useState<WorldPayload[]>([]);
     const [worldCardsLoading, setWorldCardsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [viewImageList, setViewImageList] = useState<Dict<string>[] | null>(null);
 
     // DEV
     useEffect(() => {
@@ -125,15 +121,41 @@ export default function Page() {
                             description={w.description}
                             dataCreatedAt={w.dataCreatedAt}
                             lastFolderModifiedAt={w.lastFolderModifiedAt}
+                            onClickThumbnail={onClickThumbnail}
                         />
                     ))}
                 </section>
             }
+
+            {
+                viewImageList &&
+                (
+                    <section>
+                        <ImageView imageList={viewImageList}/>
+                        {/*<div>asdasdadasdsadassadsda</div>*/}
+                        {/*<PeekCarousel items={[{src: "", alt: ""}, {src:"", alt: ""}]}/>*/}
+                    </section>
+                )
+            }
         </main>
-    )
-        ;
+    );
+
+    function onClickThumbnail(imageList: Dict<string>[]) {
+        console.log("onClickThumbnail:", imageList);
+        setViewImageList(imageList);
+    }
 }
+
 
 function notNull<T>(item: T | null): item is T {
     return item !== null;
+}
+
+function encodeCursor(dt: Date, worldId: string): string {
+    // ISO8601 UTC 문자열로 변환
+    const dtIso = dt.toISOString(); // ex) "2025-09-25T04:35:46.440Z"
+    const raw = `${dtIso}|${worldId}`;
+
+    // UTF-8 → Base64
+    return btoa(unescape(encodeURIComponent(raw)));
 }
