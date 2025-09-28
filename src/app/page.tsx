@@ -35,7 +35,6 @@ export type WorldPayload = {
 } | null;
 
 
-
 export default function Page() {
     const skeletons = Array.from({length: PAGE_SIZE});
     const [worlds, setWorlds] = useState<WorldPayload[]>([]);
@@ -131,7 +130,7 @@ export default function Page() {
                 viewImageList &&
                 (
                     <section>
-                        <ImageView imageList={viewImageList}/>
+                        <ImageView imageList={viewImageList} onESCAction={onESCOnImageView}/>
                         {/*<div>asdasdadasdsadassadsda</div>*/}
                         {/*<PeekCarousel items={[{src: "", alt: ""}, {src:"", alt: ""}]}/>*/}
                     </section>
@@ -143,6 +142,10 @@ export default function Page() {
     function onClickThumbnail(imageList: Dict<string>[]) {
         console.log("onClickThumbnail:", imageList);
         setViewImageList(imageList);
+    }
+
+    function onESCOnImageView() {
+        setViewImageList(null);
     }
 }
 
