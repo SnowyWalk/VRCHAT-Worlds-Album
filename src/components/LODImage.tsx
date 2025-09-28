@@ -5,31 +5,33 @@ import {useState} from "react";
 import {cn} from "@/lib/utils";
 
 export default function LODImage({
-                                     lowSrc, highSrc, alt, sizes, className
+                                     lowSrc, highSrc, alt, className, width, height
                                  }: {
     lowSrc: string;
     highSrc: string;
     alt: string;
-    sizes: string,
+    width: number;
+    height: number;
     className?: string
 }) {
     const [hiLoaded, setHiLoaded] = useState(false)
     const [hideLow, setHideLow] = useState(false)
 
+        {/*<div className={`relative h-full aspect-[${width}/${height}]`}>*/}
     return (
-        <>
+        <div className={`relative h-full aspect-[3840/2160]`}>
             {/* 저용량: 먼저 보이게 */}
             <Image
                 src={lowSrc}
                 alt={alt}
                 fill
                 className={cn(`object-contain transition-opacity duration-1000  ${hideLow ? "opacity-0" : "opacity-100"} select-none`, className)}
-                sizes={sizes}
                 decoding="async"
                 loading="eager"      // 저용량은 즉시
                 unoptimized
                 aria-hidden={hideLow || undefined}
                 draggable={false}
+                priority
             />
             {/* 고용량: 로드 완료되면 페이드 인 */}
             <Image
@@ -37,7 +39,6 @@ export default function LODImage({
                 alt={alt}
                 fill
                 className={cn(`object-contain transition-opacity duration-300 ${hiLoaded ? "opacity-100" : "opacity-0"} select-none`, className)}
-                sizes={sizes}
                 decoding="async"
                 loading="lazy"
                 unoptimized
@@ -50,6 +51,6 @@ export default function LODImage({
                 }}
                 draggable={false}
             />
-        </>
+        </div>
     );
 }
