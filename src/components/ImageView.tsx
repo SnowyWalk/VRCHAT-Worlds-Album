@@ -29,7 +29,7 @@ export type ImageViewProps = {
 
 
 export default function ImageView({imageList, onESCAction}: ImageViewProps) {
-    const [idx, setIdx] = useState(0);
+    const [index, setIndex] = useState(0);
     const [api, setApi] = useState<CarouselApi | null>(null)
     const [useHeight, setUseHeight] = useState(true)
 
@@ -46,7 +46,8 @@ export default function ImageView({imageList, onESCAction}: ImageViewProps) {
     }, [])
 
     useEffect(() => {
-
+        if (!api)
+            return;
         const eventHandle = (e: KeyboardEvent) => {
             if (e.key == "Escape") {
                 e.preventDefault();
@@ -67,10 +68,22 @@ export default function ImageView({imageList, onESCAction}: ImageViewProps) {
         }
     }, [api, onESCAction]);
 
+    useEffect(() => {
+        if (!api) return
+        const sync = () => setIndex(api.selectedScrollSnap())
+        api.on("select", sync)
+        api.on("reInit", sync)
+        sync() // 초기값 동기화
+        return () => {
+            api.off("select", sync)
+            api.off("reInit", sync)
+        }
+    }, [api])
+
 
     return (
         <div className={"relative w-[100dvw] h-[100dvh]"}>
-            <Dialog open >
+            <Dialog open>
                 <DialogOverlay onClick={() => onESCAction()}/>
             </Dialog>
 
@@ -78,7 +91,8 @@ export default function ImageView({imageList, onESCAction}: ImageViewProps) {
                 grid place-items-center h-15 w-15 rounded-full cursor-pointer pointer-events-auto
                 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
                 focus-visible:ring-offset-2 focus-visible:ring-offset-background
-                bg-muted text-muted-foreground ring-1 ring-border hover:bg-muted/80 active:bg-muted/70 text-3xl" onClick={() => onESCAction()}>×</Button>
+                bg-muted text-muted-foreground ring-1 ring-border hover:bg-muted/80 active:bg-muted/70 text-3xl"
+                    onClick={() => onESCAction()}>×</Button>
 
             <div
                 className="z-60 fixed left-0 top-0 w-[100dvw] h-[100dvh] flex flex-col items-center justify-around pointer-events-none">
@@ -94,13 +108,35 @@ export default function ImageView({imageList, onESCAction}: ImageViewProps) {
                 </Carousel>
 
                 {/* 하단 네비게이션 */}
-                <Card className="max-w-10/12 h-[10dvh] pointer-events-auto">
-                    <CardContent>asd</CardContent>
+                <Card className="w-fit max-w-[90vw] h-[15dvh] pointer-events-auto py-3">
+                    <CardContent className="h-full w-full overflow-x-auto overflow-y-hidden touch-pan-x">
+                        <div className="grid grid-flow-col auto-cols-[calc(15dvh-48px)] gap-2 h-full w-fit items-center">
+                            {imageList.map((e: Dict<string>, i: number) => makeThumbButton(e, i, () => api?.scrollTo(i), index))}
+                        </div>
+                    </CardContent>
                 </Card>
             </div>
         </div>
     );
 }
+
+function makeThumbButton(dic: Dict<string>, idx: number, onClickAction: (index: number) => void, selectedIdx: number) {
+    return (
+        <AspectRatio ratio={1 / 1} key={`${dic['worldId']}-${dic['filename']}`}
+                     className={`rounded-lg overflow-hidden border-accent border-[1px] hover:cursor-pointer shrink-0 ring-primary ${selectedIdx === idx ? 'ring-2' : 'hover:ring-1 hover:border-secondary'} select-none`}>
+                <Image
+                    src={`/static/Thumb/${dic['worldId']}/${replaceExtension(dic['filename']!, ".webp")}`}
+                    alt=""
+                    fill
+                    className="object-cover rounded-sm bg-muted"
+                    loading="lazy"
+                    decoding="async"
+                    onClick={() => onClickAction(idx)}
+                />
+        </AspectRatio>
+    )
+}
+
 
 function makeWideCarouselItem(dic: Dict<string>, useHeight: boolean) {
     const w = Number(dic['width'])
@@ -123,11 +159,6 @@ function makeWideCarouselItem(dic: Dict<string>, useHeight: boolean) {
                     className="object-contain h-full"
                 />
             </div>
-            {/*<Card className={"grow"}>*/}
-            {/*    <CardContent className="flex aspect-square items-center justify-center p-6">*/}
-            {/*        <span className="text-4xl font-semibold">{1}</span>*/}
-            {/*    </CardContent>*/}
-            {/*</Card>*/}
         </CarouselItem>
     )
 }
