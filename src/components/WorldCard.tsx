@@ -31,7 +31,7 @@ export type WorldCardProps = {
     description: string | null;
     dataCreatedAt: Date;
     lastFolderModifiedAt: Date;
-    onClickThumbnail: (imageList: Dict<string>[]) => void;
+    onClickThumbnailAction: ([imageList, index]: [Dict<string>[], number]) => void;
 };
 
 export default function WorldCard({
@@ -51,7 +51,7 @@ export default function WorldCard({
                                       description,
                                       dataCreatedAt,
                                       lastFolderModifiedAt,
-                                      onClickThumbnail,
+                                      onClickThumbnailAction,
                                   }: WorldCardProps) {
     const [loaded, setLoaded] = useState(false);
     const [error, setError] = useState(false);
@@ -175,13 +175,13 @@ export default function WorldCard({
                                             className="h-full w-full object-cover rounded-sm bg-muted"
                                             loading="lazy"
                                             decoding="async"
-                                            onClick={() => onClickThumbnail(imageList)}
+                                            onClick={() => onClickThumbnailAction([imageList, i])}
                                         />
 
                                         {
                                             i == 5 && Math.max(0, imageList.length - 6) > 0 &&
                                             <div
-                                                className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                                className="absolute inset-0 bg-black/50 flex items-center justify-center pointer-events-none">
                                                 <span
                                                     className="text-base font-semibold text-white">+{Math.max(0, imageList.length - 6)}</span>
                                             </div>

@@ -40,7 +40,9 @@ export default function Page() {
     const [worlds, setWorlds] = useState<WorldPayload[]>([]);
     const [worldCardsLoading, setWorldCardsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [viewImageList, setViewImageList] = useState<Dict<string>[] | null>(null);
+    const [viewImageList, setViewImageList] = useState<[Dict<string>[] | null, number]>([null, 0]);
+
+    const [viewImageList_list, viewImageList_index] = viewImageList;
 
     useEffect(() => {
         let aborted = false;
@@ -115,24 +117,27 @@ export default function Page() {
                             description={w.description}
                             dataCreatedAt={w.dataCreatedAt}
                             lastFolderModifiedAt={w.lastFolderModifiedAt}
-                            onClickThumbnail={onClickThumbnail}
+                            onClickThumbnailAction={onClickThumbnail}
                         />
                     ))}
                 </section>
             }
 
-            <section className={`${viewImageList ? "block" : "hidden"}`}>
-                <ImageView imageList={viewImageList} onESCAction={onESCOnImageView}/>
+            {
+            <section className={`${viewImageList_list ? "block" : "hidden"}`}>
+                <ImageView imageList={viewImageList_list} imageIndex={viewImageList_index} onESCAction={onESCOnImageView}/>
             </section>
+            }
         </main>
     );
 
-    function onClickThumbnail(imageList: Dict<string>[]) {
-        setViewImageList(imageList);
+    function onClickThumbnail([imageList, index]: [Dict<string>[], number]) {
+        console.log("onClickThumbnail:", {imageList, index});
+        setViewImageList([imageList, index]);
     }
 
     function onESCOnImageView() {
-        setViewImageList(null);
+        setViewImageList([null, 0]);
     }
 }
 

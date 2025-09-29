@@ -24,16 +24,18 @@ import {Button} from "@/components/ui/button";
 
 export type ImageViewProps = {
     imageList: Dict<string>[] | null;
+    imageIndex: number;
     onESCAction: () => void;
 };
 
 
-export default function ImageView({imageList, onESCAction}: ImageViewProps) {
-    const [index, setIndex] = useState(0);
+export default function ImageView({imageList, imageIndex, onESCAction}: ImageViewProps) {
+    const [index, setIndex] = useState(imageIndex);
     const [api, setApi] = useState<CarouselApi | null>(null)
     const [useHeight, setUseHeight] = useState(true)
     const [fadeIn, setFadeIn] = useState(false);
 
+    // 이미지 뷰가 열릴 때 페이드 트랜지션
     useEffect(() => {
         if (imageList != null && imageList.length > 0) {
             const t = requestAnimationFrame(() => setFadeIn(true)); // 다음 프레임에 100으로
@@ -46,6 +48,7 @@ export default function ImageView({imageList, onESCAction}: ImageViewProps) {
         }
     }, [imageList]);
 
+    // 이미지 뷰 Aspect 적용
     useEffect(() => {
         function updateSize() {
             const vh = window.innerHeight * 0.8
@@ -58,6 +61,7 @@ export default function ImageView({imageList, onESCAction}: ImageViewProps) {
         return () => window.removeEventListener("resize", updateSize)
     }, [])
 
+    // 키 이벤트 등록
     useEffect(() => {
         if (!api)
             return;
@@ -81,9 +85,43 @@ export default function ImageView({imageList, onESCAction}: ImageViewProps) {
         }
     }, [api, onESCAction]);
 
+    // 초기 인자를 위한 이벤트
     useEffect(() => {
-        if (!api) return
-        const sync = () => setIndex(api.selectedScrollSnap())
+        if (!api) return;
+
+        const jumpTo = () => {
+            const last = api.scrollSnapList().length - 1;
+            const target = Math.max(0, Math.min(imageIndex, last));
+            // 스냅 계산/레이아웃 확정 다음 프레임에 즉시 이동
+            requestAnimationFrame(() => api.scrollTo(target, true)); // true = instant jump
+        };
+
+        api.on("init", jumpTo);
+        api.on("reInit", jumpTo);
+        jumpTo();
+
+        return () => {
+            api.off("init", jumpTo);
+            api.off("reInit", jumpTo);
+        };
+    }, [api, imageIndex]);
+
+    // (B) 선택 변경을 내부 state와 동기화
+    useEffect(() => {
+        if (!api) return;
+        const sync = () => setIndex(api.selectedScrollSnap());
+        api.on("select", sync);
+        sync();
+        return () => { api.off("select", sync); }
+    }, [api]);
+
+    // 하단 썸네일 누르면 거기로 이동? 뭐더라이거
+    useEffect(() => {
+        if (!api) return;
+        const sync = () => {
+            console.log('@@@@', api.selectedScrollSnap());
+            setIndex(api.selectedScrollSnap());
+        }
         api.on("select", sync)
         api.on("reInit", sync)
         sync() // 초기값 동기화
@@ -95,7 +133,8 @@ export default function ImageView({imageList, onESCAction}: ImageViewProps) {
 
 
     return (
-        <div className={`relative w-[100dvw] h-[100dvh] ${fadeIn ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}>
+        <div
+            className={`relative w-[100dvw] h-[100dvh] ${fadeIn ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}>
             <Dialog open>
                 {imageList && <DialogOverlay onClick={() => onESCAction()}/>}
             </Dialog>
