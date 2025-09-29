@@ -149,7 +149,7 @@ public class Database
     {
         return await m_db.Data
             .AsNoTracking()
-            .Include(e => e.CategoryList)
+            //.Include(e => e.CategoryList)
             .Where(e => worldId == e.WorldId)
             .Select(e => e.CategoryList)
             .FirstAsync();

@@ -25,7 +25,7 @@ public class AdminController : ControllerBase
     public async Task<ActionResult<List<WorldCategoryDTO>>> GetWorldDataCategoryList(string worldIdListString)
     {
         string[] worldIdList = worldIdListString.Split('^').ToArray();
-        List<WorldCategoryDTO> result = await m_database.GetWorldDataCategoryList(worldIdList);
+        List<WorldCategory> result = await m_database.GetWorldDataCategoryList(worldIdList);
         return Ok(result);
     }
 
