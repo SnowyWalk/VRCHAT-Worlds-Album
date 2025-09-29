@@ -23,7 +23,7 @@ import {Button} from "@/components/ui/button";
 
 
 export type ImageViewProps = {
-    imageList: Dict<string>[];
+    imageList: Dict<string>[] | null;
     onESCAction: () => void;
 };
 
@@ -84,7 +84,7 @@ export default function ImageView({imageList, onESCAction}: ImageViewProps) {
     return (
         <div className={"relative w-[100dvw] h-[100dvh]"}>
             <Dialog open>
-                <DialogOverlay onClick={() => onESCAction()}/>
+                {imageList && <DialogOverlay onClick={() => onESCAction()}/>}
             </Dialog>
 
             <Button type="button" variant="secondary" className="z-70 fixed top-[calc(env(safe-area-inset-top,0px)+20px)] right-[calc(env(safe-area-inset-right,0px)+20px)]
@@ -102,7 +102,7 @@ export default function ImageView({imageList, onESCAction}: ImageViewProps) {
                     <CarouselContent viewportClassName="w-full"
                                      className="">
                         {
-                            imageList.map((e) => makeWideCarouselItem(e, useHeight))
+                            imageList && imageList.map((e) => makeWideCarouselItem(e, useHeight))
                         }
                     </CarouselContent>
                 </Carousel>
@@ -110,8 +110,11 @@ export default function ImageView({imageList, onESCAction}: ImageViewProps) {
                 {/* 하단 네비게이션 */}
                 <Card className="w-fit max-w-[90vw] h-[15dvh] pointer-events-auto py-3">
                     <CardContent className="h-full w-full overflow-x-auto overflow-y-hidden touch-pan-x">
-                        <div className="grid grid-flow-col auto-cols-[calc(15dvh-48px)] gap-2 h-full w-fit items-center">
-                            {imageList.map((e: Dict<string>, i: number) => makeThumbButton(e, i, () => api?.scrollTo(i), index))}
+                        <div
+                            className="grid grid-flow-col auto-cols-[calc(15dvh-48px)] gap-2 h-full w-fit items-center">
+                            {
+                                imageList && imageList.map((e: Dict<string>, i: number) => makeThumbButton(e, i, () => api?.scrollTo(i), index))
+                            }
                         </div>
                     </CardContent>
                 </Card>
@@ -124,15 +127,15 @@ function makeThumbButton(dic: Dict<string>, idx: number, onClickAction: (index: 
     return (
         <AspectRatio ratio={1 / 1} key={`${dic['worldId']}-${dic['filename']}`}
                      className={`rounded-lg overflow-hidden border-accent border-[1px] hover:cursor-pointer shrink-0 ring-primary ${selectedIdx === idx ? 'ring-2' : 'hover:ring-1 hover:border-secondary'} select-none`}>
-                <Image
-                    src={`/static/Thumb/${dic['worldId']}/${replaceExtension(dic['filename']!, ".webp")}`}
-                    alt=""
-                    fill
-                    className="object-cover rounded-sm bg-muted"
-                    loading="lazy"
-                    decoding="async"
-                    onClick={() => onClickAction(idx)}
-                />
+            <Image
+                src={`/static/Thumb/${dic['worldId']}/${replaceExtension(dic['filename']!, ".webp")}`}
+                alt=""
+                fill
+                className="object-cover rounded-sm bg-muted"
+                loading="lazy"
+                decoding="async"
+                onClick={() => onClickAction(idx)}
+            />
         </AspectRatio>
     )
 }

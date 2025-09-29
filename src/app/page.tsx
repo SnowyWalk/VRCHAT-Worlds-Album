@@ -42,11 +42,6 @@ export default function Page() {
     const [error, setError] = useState<string | null>(null);
     const [viewImageList, setViewImageList] = useState<Dict<string>[] | null>(null);
 
-    // DEV
-    useEffect(() => {
-        console.log('worlds updated!', worlds);
-    }, [worlds]);
-
     useEffect(() => {
         let aborted = false;
 
@@ -126,21 +121,13 @@ export default function Page() {
                 </section>
             }
 
-            {
-                viewImageList &&
-                (
-                    <section>
-                        <ImageView imageList={viewImageList} onESCAction={onESCOnImageView}/>
-                        {/*<div>asdasdadasdsadassadsda</div>*/}
-                        {/*<PeekCarousel items={[{src: "", alt: ""}, {src:"", alt: ""}]}/>*/}
-                    </section>
-                )
-            }
+            <section className={`${viewImageList ? "block" : "hidden"}`}>
+                <ImageView imageList={viewImageList} onESCAction={onESCOnImageView}/>
+            </section>
         </main>
     );
 
     function onClickThumbnail(imageList: Dict<string>[]) {
-        console.log("onClickThumbnail:", imageList);
         setViewImageList(imageList);
     }
 

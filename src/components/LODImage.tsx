@@ -19,7 +19,7 @@ export default function LODImage({
 
         {/*<div className={`relative h-full aspect-[${width}/${height}]`}>*/}
     return (
-        <div className={`relative h-full aspect-[3840/2160]`}>
+        <div className={`relative h-full aspect-[var(--imageRatio)]`}>
             {/* 저용량: 먼저 보이게 */}
             <Image
                 src={lowSrc}
@@ -42,7 +42,7 @@ export default function LODImage({
                 decoding="async"
                 loading="lazy"
                 unoptimized
-                onLoadingComplete={() => setHiLoaded(true)}
+                onLoad={() => setHiLoaded(true)}
                 onTransitionEnd={() => setHideLow(true)}
                 onError={() => {
                     // 고용량 실패 시 저용량 유지
