@@ -14,6 +14,7 @@ export default function LODImage({
     height: number;
     className?: string
 }) {
+    const [lowLoaded, setLowLoaded] = useState(false)
     const [hiLoaded, setHiLoaded] = useState(false)
     const [hideLow, setHideLow] = useState(false)
 
@@ -25,13 +26,13 @@ export default function LODImage({
                 src={lowSrc}
                 alt={alt}
                 fill
-                className={cn(`object-contain transition-opacity duration-1000  ${hideLow ? "opacity-0" : "opacity-100"} select-none`, className)}
+                className={cn(`object-contain transition-opacity duration-300  ${hideLow ? "hidden" : "block"} ${lowLoaded ? "opacity-100" : "opacity-0"} select-none`, className)}
                 decoding="async"
                 loading="eager"      // 저용량은 즉시
                 unoptimized
                 aria-hidden={hideLow || undefined}
                 draggable={false}
-                priority
+                onLoad={() => requestAnimationFrame(() => setLowLoaded(true))}
             />
             {/* 고용량: 로드 완료되면 페이드 인 */}
             <Image
@@ -42,7 +43,7 @@ export default function LODImage({
                 decoding="async"
                 loading="lazy"
                 unoptimized
-                onLoad={() => setHiLoaded(true)}
+                onLoad={() => requestAnimationFrame(() => setHiLoaded(true))}
                 onTransitionEnd={() => setHideLow(true)}
                 onError={() => {
                     // 고용량 실패 시 저용량 유지

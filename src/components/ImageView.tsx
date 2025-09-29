@@ -32,6 +32,19 @@ export default function ImageView({imageList, onESCAction}: ImageViewProps) {
     const [index, setIndex] = useState(0);
     const [api, setApi] = useState<CarouselApi | null>(null)
     const [useHeight, setUseHeight] = useState(true)
+    const [fadeIn, setFadeIn] = useState(false);
+
+    useEffect(() => {
+        if (imageList != null && imageList.length > 0) {
+            const t = requestAnimationFrame(() => setFadeIn(true)); // 다음 프레임에 100으로
+            return () => {
+                cancelAnimationFrame(t);
+                setFadeIn(false); // 닫힐 때를 대비
+            };
+        } else {
+            setFadeIn(false);
+        }
+    }, [imageList]);
 
     useEffect(() => {
         function updateSize() {
@@ -82,7 +95,7 @@ export default function ImageView({imageList, onESCAction}: ImageViewProps) {
 
 
     return (
-        <div className={"relative w-[100dvw] h-[100dvh]"}>
+        <div className={`relative w-[100dvw] h-[100dvh] ${fadeIn ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}>
             <Dialog open>
                 {imageList && <DialogOverlay onClick={() => onESCAction()}/>}
             </Dialog>
