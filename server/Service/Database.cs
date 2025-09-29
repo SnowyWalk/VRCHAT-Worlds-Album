@@ -145,28 +145,93 @@ public class Database
 
     #region WorldCategory
 
-    public async Task UpdateWorldDataCategoryList(string worldId, List<int> categoryIdList)
+    public async Task<List<WorldCategory>> GetWorldDataCategoryList(string worldId)
     {
+        return await m_db.Data
+            .AsNoTracking()
+            .Include(e => e.CategoryList)
+            .Where(e => worldId == e.WorldId)
+            .Select(e => e.CategoryList)
+            .FirstAsync();
+    }
+
+    public async Task<Dictionary<string, List<WorldCategory>>> GetWorldDataCategoryList(string[] worldIdList)
+    {
+        return await m_db.Data
+            .AsNoTracking()
+            .Include(e => e.CategoryList)
+            .Where(e => worldIdList.Contains(e.WorldId))
+            .ToDictionaryAsync(e => e.WorldId, e => e.CategoryList);
+    }
+
+    public async Task UpdateWorldDataCategoryList(string worldId, List<string> reqCategoryNameList)
+    {
+        // 0) 이름 정규화 + 중복 제거
+        static string Norm(string s) => (s ?? string.Empty).Trim();
+        var reqNormSet = new HashSet<string>(
+            reqCategoryNameList.Select(Norm).Where(x => x.Length > 0),
+            StringComparer.OrdinalIgnoreCase
+        );
+        if (reqNormSet.Count == 0)
+            return;
+
+        using var tx = await m_db.Database.BeginTransactionAsync();
+
+        // 1) 존재하는 카테고리 먼저 조회
+        var exist = await m_db.Category
+            .Where(c => reqNormSet.Contains(c.Name))
+            .ToListAsync();
+
+        // 2) 없는 이름만 추려서 생성
+        var existNameSet = new HashSet<string>(exist.Select(c => c.Name), StringComparer.OrdinalIgnoreCase);
+        var toCreateNames = reqNormSet.Except(existNameSet).ToList();
+        if (toCreateNames.Count > 0)
+        {
+            await m_db.Category.AddRangeAsync(toCreateNames.Select(n => new WorldCategory(n)));
+            try
+            {
+                await m_db.SaveChangesAsync(); // ← 반드시 저장해야 다음 조회에 반영됨
+            }
+            catch (DbUpdateException)
+            {
+                // UNIQUE(name) 경합 등 발생 시 무시하고 재조회로 수습
+            }
+
+            // 생성 포함 최종 집합 재조회
+            exist = await m_db.Category
+                .Where(c => reqNormSet.Contains(c.Name))
+                .ToListAsync();
+        }
+
+        // 3) 대상 World 로드(+현 연결)
         var world = await m_db.Data
             .Include(w => w.CategoryList)
-            .FirstAsync(w => w.WorldId == worldId);
+            .FirstOrDefaultAsync(w => w.WorldId == worldId);
 
-        // 기존 카테고리 전부 제거
-        world.CategoryList.Clear();
+        if (world == null)
+            throw new InvalidOperationException($"World not found: {worldId}");
 
-        // 새 카테고리 로드 후 교체
-        if (categoryIdList.Count > 0)
+        // 4) 델타 계산 (추가/삭제만 수행)
+        var targetIds = new HashSet<int>(exist.Select(c => c.Id));
+        var currentIds = new HashSet<int>(world.CategoryList.Select(c => c.Id));
+
+        var toAddIds = targetIds.Except(currentIds).ToList();
+        var toRemoveIds = currentIds.Except(targetIds).ToList();
+
+        if (toRemoveIds.Count > 0)
+            world.CategoryList.RemoveAll(c => toRemoveIds.Contains(c.Id)); // List<T>라면 확장메서드 사용 가능
+
+        if (toAddIds.Count > 0)
         {
-            var newCategoryList = await m_db.Category
-                .Where(c => categoryIdList.Contains(c.Id))
-                .ToListAsync();
-
-            foreach (var c in newCategoryList)
-                world.CategoryList.Add(c);
+            // 추적 안 된 엔티티는 키만 맞으면 Attach되어 연결됨
+            var toAddEntities = exist.Where(c => toAddIds.Contains(c.Id)).ToList();
+            world.CategoryList.AddRange(toAddEntities);
         }
 
         await m_db.SaveChangesAsync();
+        await tx.CommitAsync();
     }
+
 
     #endregion
 }

@@ -9,4 +9,7 @@ public class WorldCategory
 
     [JsonIgnore]
     public List<WorldData> WorldDataList { get; set; } = new();
+
+    public WorldCategory() { }
+    public WorldCategory(string name) { Name = name; }
 }
