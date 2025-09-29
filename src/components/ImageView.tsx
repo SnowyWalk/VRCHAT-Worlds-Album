@@ -119,7 +119,6 @@ export default function ImageView({imageList, imageIndex, onESCAction}: ImageVie
     useEffect(() => {
         if (!api) return;
         const sync = () => {
-            console.log('@@@@', api.selectedScrollSnap());
             setIndex(api.selectedScrollSnap());
         }
         api.on("select", sync)

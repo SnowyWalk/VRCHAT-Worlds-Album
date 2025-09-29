@@ -56,21 +56,6 @@ export default function WorldCard({
     const [loaded, setLoaded] = useState(false);
     const [error, setError] = useState(false);
 
-    // console.log("WorldCardProps:", {
-    //     worldName,
-    //     capacity,
-    //     visits,
-    //     favorites,
-    //     heat,
-    //     popularity,
-    //     tags,
-    //     imageList,
-    //     category,
-    //     description,
-    //     dataCreatedAt,
-    //     lastFolderModifiedAt
-    // });
-
     tags = tags.filter((t) => t.startsWith('author_tag_') || t.startsWith('category_tag_'));
     const hasImageList = Array.isArray(imageList) && imageList.length > 0;
 

@@ -132,7 +132,6 @@ export default function Page() {
     );
 
     function onClickThumbnail([imageList, index]: [Dict<string>[], number]) {
-        console.log("onClickThumbnail:", {imageList, index});
         setViewImageList([imageList, index]);
     }
 
