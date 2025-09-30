@@ -24,6 +24,7 @@ public class Database
             .Include(e => e.ImageList)
             .Include(e => e.Metadata)
             .Include(e => e.CategoryList)
+            .Include(e => e.Description)
             .OrderByDescending(e => e.DataCreatedAt)
             .ThenBy(e => e.WorldId)
             .Take(pageCount)
@@ -36,6 +37,7 @@ public class Database
             .Include(e => e.ImageList)
             .Include(e => e.Metadata)
             .Include(e => e.CategoryList)
+            .Include(e => e.Description)
             .Where(e => e.DataCreatedAt < cursorDateTime ||
                 e.DataCreatedAt == cursorDateTime && string.Compare(e.WorldId, subKey) > 0)
             .OrderByDescending(e => e.DataCreatedAt)
@@ -232,6 +234,28 @@ public class Database
         await tx.CommitAsync();
     }
 
+
+    #endregion
+
+    #region Description
+
+    public async Task<WorldDescription?> GetWorldDescription(string worldId)
+    {
+        return await m_db.Description
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.WorldId == worldId);
+    }
+
+    public async Task UpdateWorldDescription(string worldId, string description)
+    {
+        if (await m_db.Description.AsNoTracking().AnyAsync(e => e.WorldId == worldId))
+            await m_db.Description.Where(e => e.WorldId == worldId).ExecuteUpdateAsync(e => e.SetProperty(e => e.Description, description));
+        else
+        {
+            await m_db.Description.AddAsync(new WorldDescription(worldId, description));
+            await m_db.SaveChangesAsync();
+        }
+    }
 
     #endregion
 }

@@ -8,6 +8,7 @@ public class DB : DbContext
     public DbSet<WorldImage> Image => Set<WorldImage>();
     public DbSet<WorldMetadata> Metadata => Set<WorldMetadata>();
     public DbSet<WorldCategory> Category => Set<WorldCategory>();
+    public DbSet<WorldDescription> Description => Set<WorldDescription>();
 
     public DB(DbContextOptions<DB> options) : base(options)
     {
@@ -25,14 +26,14 @@ public class DB : DbContext
                 .HasForeignKey<WorldMetadata>(z => z.WorldId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            e.OwnsOne(x => x.Description);
-
             e.HasMany(e => e.CategoryList)
                 .WithMany(x => x.WorldDataList);
 
-            //e.Navigation(x => x.Metadata).AutoInclude();
-            //e.Navigation(x => x.ImageList).AutoInclude();
-            //e.Navigation(x => x.CategoryList).AutoInclude();
+            e.HasOne(x => x.Description)
+                .WithOne(x => x.WorldData)
+                .HasForeignKey<WorldDescription>(x => x.WorldId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Cascade);
 
             e.HasIndex(x => x.WorldId).IsUnique();
             e.HasIndex(x => x.DataCreatedAt);
@@ -82,6 +83,14 @@ public class DB : DbContext
             e.HasKey(x => x.Id);
             e.Property(x => x.Name).IsRequired();
             e.HasIndex(x => x.Name).IsUnique();
+        });
+
+        modelBuilder.Entity<WorldDescription>(e =>
+        {
+            e.HasKey(x => x.WorldId);
+            e.Property(x => x.WorldId).IsRequired().HasMaxLength(42);
+            e.Property(x => x.Description).IsRequired();
+            e.HasIndex(x => x.WorldId).IsUnique();
         });
     }
 }
