@@ -18,7 +18,7 @@ public class Database
 
     #region API
 
-    public async Task<List<WorldData>> GetWorldDataListFirstPage(int pageCount = 10)
+    public async Task<List<WorldData>> GetWorldDataListByPage(int page = 1, int pageCount = 10)
     {
         return await m_db.Data
             .Include(e => e.ImageList)
@@ -27,6 +27,7 @@ public class Database
             .Include(e => e.Description)
             .OrderByDescending(e => e.DataCreatedAt)
             .ThenBy(e => e.WorldId)
+            .Skip((page - 1) * pageCount)
             .Take(pageCount)
             .ToListAsync();
     }

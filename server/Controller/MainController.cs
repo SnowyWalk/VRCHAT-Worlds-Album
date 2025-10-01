@@ -31,23 +31,24 @@ public class MainController : ControllerBase
     }
 
     [HttpGet("worlddatalist")]
-    public async Task<ActionResult<List<WorldMetadata>>> GetPage([FromQuery] int pageCount = 10)
+    public async Task<ActionResult<List<WorldMetadata>>> GetPage([FromQuery] int page = 1)
     {
-        await m_worldPreprocessor.Scan(null);
-        pageCount = Math.Clamp(1, pageCount, 100);
-        List<WorldData> worldDataList = await m_database.GetWorldDataListFirstPage(pageCount);
+        m_worldPreprocessor.Scan(); // 일부러 await 안 한다.
+        List<WorldData> worldDataList = await m_database.GetWorldDataListByPage(10);
         return Ok(worldDataList);
     }
     
     [HttpGet("worlddatalist/{cursor}")]
     public async Task<ActionResult<List<WorldMetadata>>> GetPage([FromRoute] string cursor, [FromQuery] int pageCount = 10)
     {
-        await m_worldPreprocessor.Scan(null);
-        
+        m_worldPreprocessor.Scan(); // 일부러 await 안 한다.
+
         (DateTime dateTime, string worldId) = CursorUtil.DecodeCursor(cursor);
         
         pageCount = Math.Clamp(1, pageCount, 100);
         List<WorldData> worldDataList = await m_database.GetWorldDataListAfterCursor(dateTime, worldId, pageCount);
         return Ok(worldDataList);
     }
+
+
 }
