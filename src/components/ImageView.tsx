@@ -43,7 +43,6 @@ export default function ImageView({imageList, imageIndex, onESCAction}: ImageVie
 
     const onNavPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
         const el = navRef.current;
-        console.log('Down', el)
         if (!el) return;
         isDown.current = true;
         dragging.current = false;
@@ -62,7 +61,6 @@ export default function ImageView({imageList, imageIndex, onESCAction}: ImageVie
 
     const onNavPointerUp = () => {
         const el = navRef.current;
-        console.log('Up', el)
         if (!el) return;
         isDown.current = false;
         (el as HTMLElement).style.cursor = '';
