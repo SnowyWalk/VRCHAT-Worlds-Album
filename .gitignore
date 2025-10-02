@@ -46,3 +46,4 @@ backend/static/
 server/.idea/
 *.DotSettings.user
 server/static/
+server/Migrations/
