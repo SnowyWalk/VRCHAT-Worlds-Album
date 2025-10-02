@@ -14,7 +14,7 @@ import {Card, CardContent} from "@/components/ui/card";
 import {replaceExtension} from "@/utils/common-util";
 import Image from "next/image";
 import Dict = NodeJS.Dict;
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {AspectRatio} from "@/components/ui/aspect-ratio";
 import LODImage from "@/components/LODImage";
 import {CarouselDemo} from "@/components/CarouselDemo";
@@ -34,6 +34,46 @@ export default function ImageView({imageList, imageIndex, onESCAction}: ImageVie
     const [api, setApi] = useState<CarouselApi | null>(null)
     const [useHeight, setUseHeight] = useState(true)
     const [fadeIn, setFadeIn] = useState(false);
+
+    const navRef = useRef<HTMLDivElement>(null);
+    const isDown = useRef(false);
+    const dragging = useRef(false);
+    const startX = useRef(0);
+    const startScroll = useRef(0);
+
+    const onNavPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+        const el = navRef.current;
+        console.log('Down', el)
+        if (!el) return;
+        isDown.current = true;
+        dragging.current = false;
+        startX.current = e.clientX;
+        startScroll.current = el.scrollLeft;
+        (el as HTMLElement).style.cursor = 'grabbing';
+    };
+
+    const onNavPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+        const el = navRef.current;
+        if (!el || !isDown.current) return;
+        const dx = e.clientX - startX.current;
+        if (Math.abs(dx) > 10) dragging.current = true;   // 임계값 ↑
+        el.scrollLeft = startScroll.current - dx;
+    };
+
+    const onNavPointerUp = () => {
+        const el = navRef.current;
+        console.log('Up', el)
+        if (!el) return;
+        isDown.current = false;
+        (el as HTMLElement).style.cursor = '';
+        // 바로 false로 두면 click과 섞일 수 있어 한 틱 뒤 리셋
+        setTimeout(() => (dragging.current = false), 0);
+    };
+
+// 썸네일용 클릭 판정 핸들러 (드래그 아니면 실행)
+    const onThumbPointerUp = (i: number) => {
+        if (!dragging.current) api?.scrollTo(i);
+    };
 
     // 이미지 뷰가 열릴 때 페이드 트랜지션
     useEffect(() => {
@@ -112,7 +152,9 @@ export default function ImageView({imageList, imageIndex, onESCAction}: ImageVie
         const sync = () => setIndex(api.selectedScrollSnap());
         api.on("select", sync);
         sync();
-        return () => { api.off("select", sync); }
+        return () => {
+            api.off("select", sync);
+        }
     }, [api]);
 
     // 하단 썸네일 누르면 거기로 이동? 뭐더라이거
@@ -160,11 +202,16 @@ export default function ImageView({imageList, imageIndex, onESCAction}: ImageVie
 
                 {/* 하단 네비게이션 */}
                 <Card className="w-fit max-w-[90vw] h-[15dvh] pointer-events-auto py-3">
-                    <CardContent className="h-full w-full overflow-x-auto overflow-y-hidden touch-pan-x">
+                    <CardContent
+                        ref={navRef}
+                        onPointerDown={onNavPointerDown}
+                        onPointerMove={onNavPointerMove}
+                        onPointerUp={onNavPointerUp}
+                        className="h-full w-full overflow-x-auto overflow-y-hidden touch-pan-x">
                         <div
-                            className="grid grid-flow-col auto-cols-[calc(15dvh-48px)] gap-2 h-full w-fit items-center">
+                            className="grid grid-flow-col auto-cols-[calc(15dvh-48px)] gap-2 h-full w-fit items-center select-none cursor-grab">
                             {
-                                imageList && imageList.map((e: Dict<string>, i: number) => makeThumbButton(e, i, () => api?.scrollTo(i), index))
+                                imageList && imageList.map((e: Dict<string>, i: number) => makeThumbButton(e, i, onThumbPointerUp, index))
                             }
                         </div>
                     </CardContent>
@@ -174,18 +221,19 @@ export default function ImageView({imageList, imageIndex, onESCAction}: ImageVie
     );
 }
 
-function makeThumbButton(dic: Dict<string>, idx: number, onClickAction: (index: number) => void, selectedIdx: number) {
+function makeThumbButton(dic: Dict<string>, idx: number, onPointerUpAction: (index: number) => void, selectedIdx: number) {
     return (
         <AspectRatio ratio={1 / 1} key={`${dic['worldId']}-${dic['filename']}`}
-                     className={`rounded-lg overflow-hidden border-accent border-[1px] hover:cursor-pointer shrink-0 ring-primary ${selectedIdx === idx ? 'ring-2' : 'hover:ring-1 hover:border-secondary'} select-none`}>
+                     className={`rounded-lg overflow-hidden border-accent border-[1px] hover:cursor-pointer shrink-0 ring-primary ${selectedIdx === idx ? 'ring-2' : 'hover:ring-1 hover:border-secondary'} select-none`}
+                     onPointerUp={() => onPointerUpAction(idx)}>
             <Image
                 src={`/static/Thumb/${dic['worldId']}/${replaceExtension(dic['filename']!, ".webp")}`}
                 alt=""
                 fill
-                className="object-cover rounded-sm bg-muted"
+                className="object-cover rounded-sm bg-muted pointer-events-auto"
                 loading="lazy"
                 decoding="async"
-                onClick={() => onClickAction(idx)}
+                draggable={false}
             />
         </AspectRatio>
     )
