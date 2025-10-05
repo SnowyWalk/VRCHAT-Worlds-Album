@@ -1,45 +1,16 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import {useState} from "react";
 import WorldCard, {WorldCardSkeleton} from "@/components/WorldCard";
 import Dict = NodeJS.Dict;
 import ImageView from "@/components/ImageView";
-import {PeekCarousel} from "@/components/PeekCarousel";
 import {useQuery} from "@tanstack/react-query";
-import Link from "next/link";
-import {useParams, useRouter, useSearchParams} from "next/navigation";
+import {useParams, useRouter} from "next/navigation";
 import {Button} from "@/components/ui/button";
-import {keepPreviousData} from "@tanstack/query-core";
 import {getCategoryUrl} from "@/utils/url-util";
-
-const PAGE_API = "/api/worlddatalist/";
-const DEFAULT_PAGE_INDEX = 1;
-const DEFAULT_PAGE_SIZE = 10;
-
-type WorldMetadata = {
-    worldId: string;
-    worldName: string;
-    authorId: string;
-    authorName: string;
-    imageUrl: string;
-    capacity: number;
-    visits: number;
-    favorites: number;
-    heat: number;
-    popularity: number;
-    tags: string[];
-    updatedAt: Date;
-}
-
-export type WorldPayload = {
-    worldId: string;
-    metadata: WorldMetadata;
-    imageList: Dict<string>[];
-    category: string[] | null;
-    description: string | null;
-    dataCreatedAt: Date;
-    lastFolderModifiedAt: Date;
-} | null;
+import {WorldPayload} from "@/app/schemas/WorldPayload";
+import {getPageApi} from "@/utils/server-api";
+import {notNull} from "@/utils/common-util";
 
 
 export default function Page() {
@@ -60,12 +31,12 @@ export default function Page() {
         error: worldsFetchError
     } = useQuery<WorldPayload[]>({
         queryKey: ['worlds', params.page, params.pageSize],
-        queryFn: async () => fetch(`${PAGE_API}?page=${params.page}&pageSize=${params.pageSize}`).then(res => res.json()),
+        queryFn: async () => fetch(getPageApi(params.category, params.page, params.pageSize), { cache: 'no-store' }).then(res => res.json()),
         refetchOnMount: false,
         refetchOnReconnect: true,
         refetchOnWindowFocus: false,
         placeholderData: undefined,
-        staleTime: 1000 *  8, // dev일 때는 줄이는게 좋겠다.
+        staleTime: 1000 *  180, // dev일 때는 줄이는게 좋겠다.
     });
 
     const [viewImageList, setViewImageList] = useState<[Dict<string>[] | null, number]>([null, 0]);
@@ -144,10 +115,6 @@ export default function Page() {
     function onESCOnImageView() {
         setViewImageList([null, 0]);
     }
-}
-
-function notNull<T>(item: T | null): item is T {
-    return item !== null;
 }
 
 // function encodeCursor(dt: Date, worldId: string): string {

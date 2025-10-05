@@ -32,7 +32,7 @@ public class WorldPreprocessor
         m_scopeFactory = scopeFactory;
     }
 
-    public async Task Scan(CancellationToken? cancellationToken)
+    public async Task Scan(CancellationToken? cancellationToken = null)
     {
         if (IsScanWorking)
             return;

@@ -18,7 +18,7 @@ public class Database
 
     #region API
 
-    public async Task<List<WorldData>> GetWorldDataListByPage(int page = 1, int pageCount = 10)
+    public async Task<List<WorldData>> GetWorldDataListByPage(int page = 1, int pageSize = 10)
     {
         return await m_db.Data
             .Include(e => e.ImageList)
@@ -27,12 +27,12 @@ public class Database
             .Include(e => e.Description)
             .OrderByDescending(e => e.DataCreatedAt)
             .ThenBy(e => e.WorldId)
-            .Skip((page - 1) * pageCount)
-            .Take(pageCount)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
     }
 
-    public async Task<List<WorldData>> GetWorldDataListAfterCursor(DateTime cursorDateTime, string subKey, int pageCount = 10)
+    public async Task<List<WorldData>> GetWorldDataListAfterCursor(DateTime cursorDateTime, string subKey, int pageSize = 10)
     {
         return await m_db.Data
             .Include(e => e.ImageList)
@@ -43,7 +43,7 @@ public class Database
                 e.DataCreatedAt == cursorDateTime && string.Compare(e.WorldId, subKey) > 0)
             .OrderByDescending(e => e.DataCreatedAt)
             .ThenBy(e => e.WorldId)
-            .Take(pageCount)
+            .Take(pageSize)
             .ToListAsync();
     }
 

@@ -82,6 +82,10 @@ public class DB : DbContext
         {
             e.HasKey(x => x.Id);
             e.Property(x => x.Name).IsRequired();
+            // e.Property(x => x.LocalizedText);
+
+            e.OwnsOne(x => x.LocalizedText);
+            
             e.HasIndex(x => x.Name).IsUnique();
         });
 

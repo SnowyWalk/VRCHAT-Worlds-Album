@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using server.Core;
 using server.Schema;
 using server.Service;
 using server.Util;
@@ -31,22 +32,23 @@ public class MainController : ControllerBase
     }
 
     [HttpGet("worlddatalist")]
-    public async Task<ActionResult<List<WorldMetadata>>> GetPage([FromQuery] int page = 1)
+    public async Task<ActionResult<List<WorldMetadata>>> GetPage([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
+        Log.Debug($"[GetPage] GET {page}, {pageSize}");
         m_worldPreprocessor.Scan(); // 일부러 await 안 한다.
-        List<WorldData> worldDataList = await m_database.GetWorldDataListByPage(10);
+        List<WorldData> worldDataList = await m_database.GetWorldDataListByPage(page, pageSize);
         return Ok(worldDataList);
     }
     
     [HttpGet("worlddatalist/{cursor}")]
-    public async Task<ActionResult<List<WorldMetadata>>> GetPage([FromRoute] string cursor, [FromQuery] int pageCount = 10)
+    public async Task<ActionResult<List<WorldMetadata>>> GetPage([FromRoute] string cursor, [FromQuery] int pageSize = 10)
     {
         m_worldPreprocessor.Scan(); // 일부러 await 안 한다.
 
         (DateTime dateTime, string worldId) = CursorUtil.DecodeCursor(cursor);
         
-        pageCount = Math.Clamp(1, pageCount, 100);
-        List<WorldData> worldDataList = await m_database.GetWorldDataListAfterCursor(dateTime, worldId, pageCount);
+        pageSize = Math.Clamp(1, pageSize, 100);
+        List<WorldData> worldDataList = await m_database.GetWorldDataListAfterCursor(dateTime, worldId, pageSize);
         return Ok(worldDataList);
     }
 

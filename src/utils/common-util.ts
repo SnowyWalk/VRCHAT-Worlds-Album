@@ -11,3 +11,7 @@ export function replaceExtension(filename: string, newExt: string): string {
     }
     return filename.substring(0, idx) + newExt;
 }
+
+export function notNull<T>(item: T | null): item is T {
+    return item !== null;
+}
