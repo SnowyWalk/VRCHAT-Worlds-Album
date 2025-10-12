@@ -3,10 +3,10 @@ import "./globals.css"
 import type {Metadata} from "next"
 import {ThemeProvider} from "@/components/theme-provider"
 import ThemeToggle from "@/components/theme-toggle";
-import QueryProvider from "@/query/query-provider";
+import QueryProvider from "@/providers/query-provider";
 import {ReactQueryDevtools} from "@tanstack/react-query-devtools";
 
-export const metadata: Metadata = {title: "My App"}
+export const metadata: Metadata = {title: "VRCHAT Worlds Album"}
 
 export default function RootLayout({children}: { children: React.ReactNode }) {
     return (

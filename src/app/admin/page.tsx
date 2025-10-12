@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import {WorldPayload} from "@/app/schemas/WorldPayload";
+import {WorldPayload} from "@/schemas/WorldPayload";
 import {useQuery} from "@tanstack/react-query";
 import {getPageApi} from "@/utils/server-api";
 import {DEFAULT_CATEGORY, DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE} from "@/utils/consts";
@@ -14,6 +14,18 @@ import {SquarePenIcon, XIcon} from "lucide-react";
 import {Item, ItemContent, ItemFooter, ItemHeader} from "@/components/ui/item";
 import CopyButton from "@/components/CopyButton";
 import {Separator} from "@/components/ui/separator";
+import {useEffect, useState} from "react";
+import WorldCardEditDialog from "@/components/WorldCardEditDialog";
+import {Label} from "recharts";
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectLabel,
+    SelectTrigger,
+    SelectValue
+} from "@/components/ui/select";
 
 export default function AdminPage() {
     const category: string = DEFAULT_CATEGORY;
@@ -25,21 +37,34 @@ export default function AdminPage() {
         refetchOnMount: false,
         refetchOnReconnect: true,
     })
+    const [editWorld, setEditWorld] = useState<WorldPayload>(null);
+
+    useEffect(() => {
+        console.log("editWorld", editWorld);
+    }, [editWorld]);
 
     return (
         <section>
             {/*TODO: 검색창*/}
             {/*일단 월드 리스트부터*/}
 
-            <Separator />
+            <Separator/>
+            <Select>
+                <SelectTrigger className="w-[180px]">
+                    <SelectValue  placeholder="Select a fruit"/>
+                </SelectTrigger>
+                <SelectContent arrowPadding={50} className={"w-[1800px]"}>
+                    <SelectGroup>
+                        <SelectLabel>Fruits</SelectLabel>
+                        <SelectItem value="apple">Apple</SelectItem>
+                        <SelectItem value="banana">Banana</SelectItem>
+                        <SelectItem value="blueberry">Blueberry</SelectItem>
+                        <SelectItem value="grapes">Grapes</SelectItem>
+                        <SelectItem value="pineapple">Pineapple</SelectItem>
+                    </SelectGroup>
+                </SelectContent>
+            </Select>
             <Table>
-                {/*<TableHeader className={"h-15"}>*/}
-                {/*    <TableRow>*/}
-                {/*        <TableHead>Thumb</TableHead>*/}
-                {/*        <TableHead>Info</TableHead>*/}
-                {/*        <TableHead>Actions</TableHead>*/}
-                {/*    </TableRow>*/}
-                {/*</TableHeader>*/}
                 <TableBody>
                     {
                         !worlds && isFetching &&
@@ -75,7 +100,8 @@ export default function AdminPage() {
                                 </TableCell>
                                 <TableCell>
                                     <div className={"flex gap-2"}>
-                                        <Button className={"btn btn-sm btn-outline"}><SquarePenIcon/>수정</Button>
+                                        <Button className={"btn btn-sm btn-outline"}
+                                                onClick={() => setEditWorld(w)}><SquarePenIcon/><span>수정</span></Button>
                                         <Button className={"btn btn-sm btn-outline"}><XIcon/>삭제</Button>
                                     </div>
                                 </TableCell>
@@ -88,6 +114,11 @@ export default function AdminPage() {
 
                 </TableBody>
             </Table>
+
+            {
+                editWorld &&
+                <WorldCardEditDialog worldData={editWorld} onOpenChangeAction={() => setEditWorld(null)}/>
+            }
         </section>
     )
 }

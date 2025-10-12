@@ -61,8 +61,6 @@ export default function WorldCard({
 
     return (
         <Card className="overflow-hidden py-0 justify-between items-center gap-0">
-
-
             <AspectRatio ratio={4 / 3}>
                 <CardHeader className="p-0 relative h-full">
                     {!loaded && !error && (

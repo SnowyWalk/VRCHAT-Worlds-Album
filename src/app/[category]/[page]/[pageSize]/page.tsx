@@ -8,7 +8,7 @@ import {useQuery} from "@tanstack/react-query";
 import {useParams, useRouter} from "next/navigation";
 import {Button} from "@/components/ui/button";
 import {getCategoryUrl} from "@/utils/url-util";
-import {WorldPayload} from "@/app/schemas/WorldPayload";
+import {WorldPayload} from "@/schemas/WorldPayload";
 import {getPageApi} from "@/utils/server-api";
 import {notNull} from "@/utils/common-util";
 
